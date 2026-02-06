@@ -347,136 +347,156 @@ fn render_tags_view(frame: &mut Frame, state: &AppState, area: Rect) {
 fn render_status_bar(frame: &mut Frame, state: &AppState, area: Rect) {
     let colors = state.theme.colors();
 
-    let status_text = if let Some(msg) = &state.status_message {
-        msg.clone()
+    let content = if let Some(msg) = &state.status_message {
+        vec![
+            Span::styled(" ", Style::default()),
+            Span::styled(msg, colors.text_secondary()),
+        ]
     } else {
-        format!(" {} ? Help │ t Theme │ A About │ q Quit", ICON)
+        vec![
+            Span::styled(" ", Style::default()),
+            Span::styled("Tab", colors.key_hint()),
+            Span::styled(": views  ", colors.text_muted()),
+            Span::styled("?", colors.key_hint()),
+            Span::styled(": help  ", colors.text_muted()),
+            Span::styled("t", colors.key_hint()),
+            Span::styled(": theme  ", colors.text_muted()),
+            Span::styled("A", colors.key_hint()),
+            Span::styled(": about  ", colors.text_muted()),
+            Span::styled("q", colors.key_hint()),
+            Span::styled(": quit", colors.text_muted()),
+        ]
     };
 
-    let status = Paragraph::new(status_text)
-        .style(colors.text_muted())
-        .alignment(Alignment::Left);
-
+    let status = Paragraph::new(Line::from(content))
+        .style(Style::default().bg(colors.bg_secondary));
     frame.render_widget(status, area);
 }
 
 /// Render help popup
 fn render_help_popup(frame: &mut Frame, state: &AppState) {
     let colors = state.theme.colors();
-    let area = centered_rect(60, 80, frame.area());
+    let area = frame.area();
 
-    frame.render_widget(Clear, area);
+    // Calculate popup size
+    let popup_width = 60u16.min(area.width.saturating_sub(4));
+    let popup_height = 34u16.min(area.height.saturating_sub(4));
 
-    let help_text = vec![
+    let popup_area = Rect {
+        x: area.x + (area.width - popup_width) / 2,
+        y: area.y + (area.height - popup_height) / 2,
+        width: popup_width,
+        height: popup_height,
+    };
+
+    frame.render_widget(Clear, popup_area);
+
+    let help_content = vec![
+        Line::from(""),
+        Line::from(vec![Span::styled(
+            "  Navigation",
+            colors.text_primary().add_modifier(Modifier::BOLD),
+        )]),
         Line::from(vec![
-            Span::styled("Navigation", colors.text_primary().add_modifier(Modifier::BOLD)),
+            Span::styled("  Tab / Shift+Tab    ", colors.key_hint()),
+            Span::styled("Switch between views", colors.text()),
+        ]),
+        Line::from(vec![
+            Span::styled("  1-3                ", colors.key_hint()),
+            Span::styled("Jump to view directly", colors.text()),
+        ]),
+        Line::from(vec![
+            Span::styled("  j/k or ↑/↓         ", colors.key_hint()),
+            Span::styled("Navigate lists", colors.text()),
+        ]),
+        Line::from(vec![
+            Span::styled("  g/G                ", colors.key_hint()),
+            Span::styled("Go to first/last item", colors.text()),
+        ]),
+        Line::from(vec![
+            Span::styled("  h/l or ←/→         ", colors.key_hint()),
+            Span::styled("Focus sidebar/main", colors.text()),
+        ]),
+        Line::from(""),
+        Line::from(vec![Span::styled(
+            "  Tasks View",
+            colors.text_primary().add_modifier(Modifier::BOLD),
+        )]),
+        Line::from(vec![
+            Span::styled("  Enter/Space        ", colors.key_hint()),
+            Span::styled("Toggle task complete", colors.text()),
+        ]),
+        Line::from(vec![
+            Span::styled("  n                  ", colors.key_hint()),
+            Span::styled("Create new task", colors.text()),
+        ]),
+        Line::from(vec![
+            Span::styled("  e                  ", colors.key_hint()),
+            Span::styled("Edit selected task", colors.text()),
+        ]),
+        Line::from(vec![
+            Span::styled("  d                  ", colors.key_hint()),
+            Span::styled("Delete selected task", colors.text()),
+        ]),
+        Line::from(vec![
+            Span::styled("  p                  ", colors.key_hint()),
+            Span::styled("Cycle priority", colors.text()),
+        ]),
+        Line::from(vec![
+            Span::styled("  o                  ", colors.key_hint()),
+            Span::styled("Open task URL", colors.text()),
+        ]),
+        Line::from(vec![
+            Span::styled("  c                  ", colors.key_hint()),
+            Span::styled("Toggle show completed", colors.text()),
+        ]),
+        Line::from(""),
+        Line::from(vec![Span::styled(
+            "  General",
+            colors.text_primary().add_modifier(Modifier::BOLD),
+        )]),
+        Line::from(vec![
+            Span::styled("  t                  ", colors.key_hint()),
+            Span::styled("Open theme selector", colors.text()),
+        ]),
+        Line::from(vec![
+            Span::styled("  A                  ", colors.key_hint()),
+            Span::styled("About Tickit", colors.text()),
+        ]),
+        Line::from(vec![
+            Span::styled("  r                  ", colors.key_hint()),
+            Span::styled("Refresh data", colors.text()),
+        ]),
+        Line::from(vec![
+            Span::styled("  ?                  ", colors.key_hint()),
+            Span::styled("Toggle this help", colors.text()),
+        ]),
+        Line::from(vec![
+            Span::styled("  q / Ctrl+c         ", colors.key_hint()),
+            Span::styled("Quit application", colors.text()),
         ]),
         Line::from(""),
         Line::from(vec![
-            Span::styled("  j/↓  ", colors.key_hint()),
-            Span::raw("Move down"),
-        ]),
-        Line::from(vec![
-            Span::styled("  k/↑  ", colors.key_hint()),
-            Span::raw("Move up"),
-        ]),
-        Line::from(vec![
-            Span::styled("  g    ", colors.key_hint()),
-            Span::raw("Go to top"),
-        ]),
-        Line::from(vec![
-            Span::styled("  G    ", colors.key_hint()),
-            Span::raw("Go to bottom"),
-        ]),
-        Line::from(vec![
-            Span::styled("  h/←  ", colors.key_hint()),
-            Span::raw("Focus sidebar"),
-        ]),
-        Line::from(vec![
-            Span::styled("  l/→  ", colors.key_hint()),
-            Span::raw("Focus main"),
-        ]),
-        Line::from(vec![
-            Span::styled("  Tab  ", colors.key_hint()),
-            Span::raw("Next view"),
-        ]),
-        Line::from(vec![
-            Span::styled("  1-3  ", colors.key_hint()),
-            Span::raw("Switch to view"),
-        ]),
-        Line::from(""),
-        Line::from(vec![
-            Span::styled("Tasks", colors.text_primary().add_modifier(Modifier::BOLD)),
-        ]),
-        Line::from(""),
-        Line::from(vec![
-            Span::styled("  n    ", colors.key_hint()),
-            Span::raw("Add new task"),
-        ]),
-        Line::from(vec![
-            Span::styled("  e    ", colors.key_hint()),
-            Span::raw("Edit task"),
-        ]),
-        Line::from(vec![
-            Span::styled("  d    ", colors.key_hint()),
-            Span::raw("Delete task"),
-        ]),
-        Line::from(vec![
-            Span::styled("  Space/x  ", colors.key_hint()),
-            Span::raw("Toggle complete"),
-        ]),
-        Line::from(vec![
-            Span::styled("  p    ", colors.key_hint()),
-            Span::raw("Cycle priority"),
-        ]),
-        Line::from(vec![
-            Span::styled("  o    ", colors.key_hint()),
-            Span::raw("Open URL"),
-        ]),
-        Line::from(vec![
-            Span::styled("  c    ", colors.key_hint()),
-            Span::raw("Toggle show completed"),
-        ]),
-        Line::from(""),
-        Line::from(vec![
-            Span::styled("General", colors.text_primary().add_modifier(Modifier::BOLD)),
-        ]),
-        Line::from(""),
-        Line::from(vec![
-            Span::styled("  t    ", colors.key_hint()),
-            Span::raw("Theme picker"),
-        ]),
-        Line::from(vec![
-            Span::styled("  A    ", colors.key_hint()),
-            Span::raw("About"),
-        ]),
-        Line::from(vec![
-            Span::styled("  r    ", colors.key_hint()),
-            Span::raw("Refresh"),
-        ]),
-        Line::from(vec![
-            Span::styled("  ?    ", colors.key_hint()),
-            Span::raw("Toggle help"),
-        ]),
-        Line::from(vec![
-            Span::styled("  q    ", colors.key_hint()),
-            Span::raw("Quit"),
+            Span::styled("  Press ", colors.text_muted()),
+            Span::styled("Esc", colors.key_hint()),
+            Span::styled(" or ", colors.text_muted()),
+            Span::styled("?", colors.key_hint()),
+            Span::styled(" to close", colors.text_muted()),
         ]),
     ];
 
-    let help = Paragraph::new(help_text)
+    let help = Paragraph::new(help_content)
         .block(
             Block::default()
-                .title(" Help ")
-                .title_style(colors.text_primary())
                 .borders(Borders::ALL)
-                .border_type(BorderType::Rounded)
-                .border_style(colors.block_focus()),
+                .border_style(colors.block_focus())
+                .style(Style::default().bg(colors.bg_secondary))
+                .title(" ⌨ Keyboard Shortcuts ")
+                .title_style(colors.text_primary()),
         )
-        .style(colors.text())
         .wrap(Wrap { trim: false });
 
-    frame.render_widget(help, area);
+    frame.render_widget(help, popup_area);
 }
 
 /// Render theme picker
