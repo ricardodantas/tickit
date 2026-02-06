@@ -95,30 +95,37 @@ tickit export --format csv
 |-----|--------|
 | `j` / `↓` | Move down |
 | `k` / `↑` | Move up |
+| `g` | Go to top |
+| `G` | Go to bottom |
 | `h` / `←` | Focus sidebar |
 | `l` / `→` | Focus main |
 | `Tab` | Next view |
-| `1-3` | Switch to view |
+| `Shift+Tab` | Previous view |
+| `1` | Tasks view |
+| `2` | Lists view |
+| `3` | Tags view |
 
 ### Tasks
 
 | Key | Action |
 |-----|--------|
-| `a` / `n` | Add new task |
+| `n` | Add new task |
 | `e` | Edit task |
 | `d` | Delete task |
 | `Space` / `x` | Toggle complete |
+| `Enter` | Select list / Toggle task |
 | `p` | Cycle priority |
 | `o` | Open URL |
 | `c` | Toggle show completed |
+| `r` | Refresh |
 
 ### General
 
 | Key | Action |
 |-----|--------|
-| `Ctrl+T` | Theme picker |
-| `?` | Help |
-| `r` | Refresh |
+| `t` | Theme picker |
+| `A` | About dialog |
+| `?` / `F1` | Help |
 | `q` | Quit |
 
 ## Themes
@@ -138,7 +145,7 @@ Tickit includes 15 beautiful themes:
 - Everforest
 - Cyberpunk
 
-Press `Ctrl+T` in the TUI to switch themes.
+Press `t` in the TUI to switch themes.
 
 ## Data Storage
 
@@ -179,6 +186,10 @@ Human-readable format with checkboxes:
 ### CSV
 
 Spreadsheet-compatible format.
+
+## Author
+
+**Ricardo Dantas** - [GitHub](https://github.com/ricardodantas)
 
 ## License
 
