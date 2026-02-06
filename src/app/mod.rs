@@ -15,16 +15,16 @@ use crossterm::{
 use ratatui::prelude::*;
 use std::io::stdout;
 use std::sync::mpsc;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use crate::config::Config;
 use crate::db::Database;
-use crate::sync::{RecordType, SyncClient, SyncRecord};
+use crate::sync::{RecordType, SyncClient, SyncRecord, SyncResponse};
 
 /// Messages from background tasks
 enum BackgroundMsg {
     UpdateAvailable(String),
-    SyncComplete(Result<chrono::DateTime<chrono::Utc>, String>),
+    SyncComplete(Result<SyncResponse, String>),
 }
 
 /// Run the TUI application
@@ -75,6 +75,10 @@ fn run_app(
     let mut sync_in_progress = false;
     // Channel for sync results
     let (sync_tx, sync_rx) = mpsc::channel::<BackgroundMsg>();
+    // Track last sync time for auto-sync interval
+    let mut last_sync_attempt = Instant::now();
+    // Initial sync on startup if enabled
+    let mut needs_initial_sync = state.is_sync_enabled();
 
     loop {
         // Check for background messages (non-blocking)
@@ -93,9 +97,20 @@ fn run_app(
         {
             sync_in_progress = false;
             match result {
-                Ok(server_time) => {
-                    state.set_last_sync(server_time);
-                    state.set_status("Sync complete");
+                Ok(response) => {
+                    // Apply incoming changes from server
+                    let applied = apply_incoming_changes(&state.db, &response);
+
+                    // Update last sync time in DB
+                    let _ = state.db.set_last_sync(response.server_time);
+                    state.set_last_sync(response.server_time);
+
+                    if applied > 0 {
+                        state.set_status(format!("Synced ({} changes applied)", applied));
+                    } else {
+                        state.set_status("Synced");
+                    }
+
                     // Refresh data after sync
                     let _ = state.refresh_data();
                 }
@@ -116,9 +131,25 @@ fn run_app(
             terminal.draw(|frame| ui::render(frame, state))?;
         }
 
-        // Check if sync was requested (via Ctrl+S)
-        if state.sync_status.syncing && !sync_in_progress && state.is_sync_enabled() {
+        // Auto-sync on interval (if enabled and configured)
+        let sync_interval = state.config.sync.interval_secs;
+        let should_auto_sync = state.is_sync_enabled()
+            && sync_interval > 0
+            && !sync_in_progress
+            && (needs_initial_sync || last_sync_attempt.elapsed().as_secs() >= sync_interval);
+
+        // Check if sync was requested (via Ctrl+S) or triggered by action or auto-sync
+        let should_sync = (state.sync_status.syncing || state.sync_pending || should_auto_sync)
+            && !sync_in_progress
+            && state.is_sync_enabled();
+
+        if should_sync {
             sync_in_progress = true;
+            needs_initial_sync = false;
+            last_sync_attempt = Instant::now();
+            state.set_syncing(true);
+            state.sync_pending = false;
+
             let config = state.config.sync.clone();
             let last_sync = state.db.get_last_sync().ok().flatten();
 
@@ -130,7 +161,7 @@ fn run_app(
                 let mut client = SyncClient::new(config);
                 let result = client.sync(changes, last_sync);
                 let msg = match result {
-                    Ok(response) => BackgroundMsg::SyncComplete(Ok(response.server_time)),
+                    Ok(response) => BackgroundMsg::SyncComplete(Ok(response)),
                     Err(e) => BackgroundMsg::SyncComplete(Err(e.to_string())),
                 };
                 let _ = tx.send(msg);
@@ -213,4 +244,37 @@ fn gather_local_changes(
     }
 
     changes
+}
+
+/// Apply incoming changes from the server to the local database
+fn apply_incoming_changes(db: &Database, response: &SyncResponse) -> usize {
+    let mut applied = 0;
+
+    for record in &response.changes {
+        let result = match record {
+            SyncRecord::Task(task) => db.upsert_task(task),
+            SyncRecord::List(list) => db.upsert_list(list),
+            SyncRecord::Tag(tag) => {
+                // Tags don't have updated_at, so just insert/replace
+                db.upsert_tag(tag)
+            }
+            SyncRecord::TaskTag(link) => db.upsert_task_tag(link),
+            SyncRecord::Deleted {
+                id, record_type, ..
+            } => {
+                match record_type {
+                    RecordType::Task => db.delete_task_by_id(*id),
+                    RecordType::List => db.delete_list_by_id(*id),
+                    RecordType::Tag => db.delete_tag_by_id(*id),
+                    RecordType::TaskTag => Ok(()), // Handled by task update
+                }
+            }
+        };
+
+        if result.is_ok() {
+            applied += 1;
+        }
+    }
+
+    applied
 }

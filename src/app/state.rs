@@ -195,6 +195,8 @@ pub struct AppState {
     // Sync state
     /// Sync status for UI display
     pub sync_status: SyncStatus,
+    /// Flag to trigger sync after data changes
+    pub sync_pending: bool,
 }
 
 /// Actions that need confirmation
@@ -253,6 +255,7 @@ impl AppState {
             pending_update: false,
             update_result: None,
             sync_status: SyncStatus::default(),
+            sync_pending: false,
         };
 
         state.refresh_data()?;
@@ -478,6 +481,7 @@ impl AppState {
 
         self.mode = Mode::Normal;
         self.refresh_data()?;
+        self.mark_sync_pending();
         Ok(())
     }
 
@@ -493,6 +497,7 @@ impl AppState {
             };
             self.set_status(format!("Task {}", status));
             self.refresh_tasks()?;
+            self.mark_sync_pending();
         }
         Ok(())
     }
@@ -514,21 +519,25 @@ impl AppState {
             match action {
                 ConfirmAction::DeleteTask(id) => {
                     self.db.delete_task(id)?;
+                    self.db.record_tombstone(id, "task")?;
                     self.set_status("Task deleted");
                 }
                 ConfirmAction::DeleteList(id) => {
                     self.db.delete_list(id)?;
+                    self.db.record_tombstone(id, "list")?;
                     self.selected_list_id = None;
                     self.list_index = 0;
                     self.set_status("List deleted");
                 }
                 ConfirmAction::DeleteTag(id) => {
                     self.db.delete_tag(id)?;
+                    self.db.record_tombstone(id, "tag")?;
                     self.set_status("Tag deleted");
                 }
             }
             self.mode = Mode::Normal;
             self.refresh_data()?;
+            self.mark_sync_pending();
         }
         Ok(())
     }
@@ -560,6 +569,7 @@ impl AppState {
             task.priority = task.priority.next();
             task.updated_at = chrono::Utc::now();
             self.db.update_task(task)?;
+            self.mark_sync_pending();
         }
         if let Some(task) = self.tasks.get(self.task_index) {
             self.set_status(format!("Priority: {}", task.priority.name()));
@@ -611,6 +621,7 @@ impl AppState {
 
         self.mode = Mode::Normal;
         self.refresh_data()?;
+        self.mark_sync_pending();
         Ok(())
     }
 
@@ -669,6 +680,7 @@ impl AppState {
 
         self.mode = Mode::Normal;
         self.refresh_data()?;
+        self.mark_sync_pending();
         Ok(())
     }
 
@@ -871,5 +883,12 @@ impl AppState {
         self.sync_status.last_sync = Some(time);
         self.sync_status.last_error = None;
         self.sync_status.syncing = false;
+    }
+
+    /// Mark that data has changed and sync is needed
+    pub fn mark_sync_pending(&mut self) {
+        if self.is_sync_enabled() {
+            self.sync_pending = true;
+        }
     }
 }

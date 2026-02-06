@@ -815,6 +815,30 @@ impl Database {
         )?;
         Ok(())
     }
+
+    /// Upsert a tag (insert or replace)
+    pub fn upsert_tag(&self, tag: &Tag) -> Result<()> {
+        self.conn.execute(
+            r#"INSERT OR REPLACE INTO tags (id, name, color, created_at)
+               VALUES (?1, ?2, ?3, ?4)"#,
+            params![
+                tag.id.to_string(),
+                tag.name,
+                tag.color,
+                tag.created_at.to_rfc3339(),
+            ],
+        )?;
+        Ok(())
+    }
+
+    /// Upsert a task-tag link
+    pub fn upsert_task_tag(&self, link: &crate::sync::TaskTagLink) -> Result<()> {
+        self.conn.execute(
+            "INSERT OR IGNORE INTO task_tags (task_id, tag_id) VALUES (?1, ?2)",
+            params![link.task_id.to_string(), link.tag_id.to_string()],
+        )?;
+        Ok(())
+    }
 }
 
 #[cfg(test)]
