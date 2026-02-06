@@ -1,5 +1,15 @@
 # Tickit ✓
 
+```
+  ████████╗██╗ ██████╗██╗  ██╗██╗████████╗
+  ╚══██╔══╝██║██╔════╝██║ ██╔╝██║╚══██╔══╝
+     ██║   ██║██║     █████╔╝ ██║   ██║   
+     ██║   ██║██║     ██╔═██╗ ██║   ██║   
+     ██║   ██║╚██████╗██║  ██╗██║   ██║   
+     ╚═╝   ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝   ╚═╝   
+                    ✓ get stuff done
+```
+
 A stunning terminal-based task manager with CLI and TUI modes.
 
 ![Rust](https://img.shields.io/badge/rust-1.93+-orange.svg)
