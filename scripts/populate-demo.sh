@@ -93,7 +93,7 @@ INSERT INTO tasks (id, title, description, url, priority, completed, list_id, cr
 ('bbbb4444-4444-4444-4444-444444444444', 'Deploy to staging', 'Push latest changes to staging environment', NULL, 'medium', 1, '11111111-1111-1111-1111-111111111111', '$NOW', '$NOW'),
 ('bbbb5555-5555-5555-5555-555555555555', 'Buy groceries', 'Milk, eggs, bread, cheese, vegetables', NULL, 'low', 0, '33333333-3333-3333-3333-333333333333', '$NOW', '$NOW'),
 ('bbbb6666-6666-6666-6666-666666666666', 'Schedule dentist appointment', 'Annual checkup - call Dr. Smith', NULL, 'low', 0, '22222222-2222-2222-2222-222222222222', '$NOW', '$NOW'),
-('bbbb7777-7777-7777-7777-777777777777', 'Plan weekend trip', 'Research hotels and activities', 'https://booking.com', 'none', 0, '22222222-2222-2222-2222-222222222222', '$NOW', '$NOW'),
+('bbbb7777-7777-7777-7777-777777777777', 'Plan weekend trip', 'Research hotels and activities', 'https://booking.com', 'low', 0, '22222222-2222-2222-2222-222222222222', '$NOW', '$NOW'),
 ('bbbb8888-8888-8888-8888-888888888888', 'Update resume', 'Add recent projects and skills', NULL, 'medium', 1, '22222222-2222-2222-2222-222222222222', '$NOW', '$NOW'),
 ('bbbb9999-9999-9999-9999-999999999999', 'Reply to emails', 'Clear inbox backlog', NULL, 'low', 0, '00000000-0000-0000-0000-000000000000', '$NOW', '$NOW');
 
