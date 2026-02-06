@@ -39,6 +39,7 @@
 - [⌨️ Keybindings](#️-keybindings)
 - [🎨 Themes](#-themes)
 - [📤 Export Formats](#-export-formats)
+- [☁️ Sync (Optional)](#️-sync-optional)
 - [🏗️ Architecture](#️-architecture)
 - [🔧 Building from Source](#-building-from-source)
 - [🤝 Contributing](#-contributing)
@@ -91,6 +92,7 @@ Export to JSON, todo.txt, Markdown, or CSV formats.
 | ✅ **Toggle Completed** | Show/hide completed tasks |
 | 📅 **Due Dates** | Set deadlines for your tasks |
 | 🔄 **Auto-Update** | Check for updates from TUI or CLI |
+| ☁️ **Optional Sync** | Self-hosted sync server for multiple devices |
 
 <br>
 
@@ -251,6 +253,7 @@ The update command automatically detects whether you installed via Cargo or Home
 | `t` | Open theme picker |
 | `A` | About Tickit |
 | `?` / `F1` | Show help |
+| `Ctrl+s` | Sync with server (if configured) |
 | `q` | Quit |
 | `Ctrl+c` / `Ctrl+q` | Force quit |
 
@@ -447,6 +450,42 @@ Tickit is a single binary with both CLI and TUI modes.
 |------|------|---------|
 | Database | `~/.config/tickit/tickit.sqlite` | Tasks, lists, tags |
 | Config | `~/.config/tickit/config.toml` | Theme and settings |
+| Device ID | `~/.config/tickit/.device_id` | Unique device identifier for sync |
+
+<br>
+
+## ☁️ Sync (Optional)
+
+Tickit can sync your tasks across multiple devices using a self-hosted sync server.
+
+**Sync is completely optional.** Tickit works fully offline by default.
+
+### Setting Up Sync
+
+1. **Deploy tickit-sync server** (see [tickit-sync/README.md](tickit-sync/README.md))
+
+2. **Generate an API token:**
+   ```bash
+   tickit-sync token --name "my-laptop"
+   ```
+
+3. **Configure Tickit client** (`~/.config/tickit/config.toml`):
+   ```toml
+   [sync]
+   enabled = true
+   server = "https://your-server.com"
+   token = "your-generated-token"
+   interval_secs = 300  # auto-sync every 5 minutes
+   ```
+
+4. **Manual sync:** Press `Ctrl+S` in the TUI
+
+### Sync Features
+
+- **Self-hosted**: Run on your own server, keep your data private
+- **Multi-device**: Sync between desktop, laptop, and (future) mobile
+- **Conflict resolution**: Last-write-wins with conflict detection
+- **Offline-first**: Changes sync when connection is available
 
 <br>
 
