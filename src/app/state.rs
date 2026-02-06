@@ -34,6 +34,8 @@ pub enum Mode {
     Confirm,
     /// Export dialog
     Export,
+    /// About dialog
+    About,
 }
 
 /// Current view/tab

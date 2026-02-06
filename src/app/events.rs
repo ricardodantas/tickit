@@ -20,6 +20,10 @@ pub fn handle_key(state: &mut AppState, key: KeyEvent) {
             }
             return;
         }
+        Mode::About => {
+            handle_about(state, key);
+            return;
+        }
         Mode::AddTask | Mode::EditTask => {
             handle_task_editor(state, key);
             return;
@@ -103,6 +107,11 @@ pub fn handle_key(state: &mut AppState, key: KeyEvent) {
                 .position(|t| *t == state.theme)
                 .unwrap_or(0);
             state.mode = Mode::ThemePicker;
+            return;
+        }
+        // About dialog (A like Hazelnut)
+        (_, KeyCode::Char('A')) => {
+            state.mode = Mode::About;
             return;
         }
         _ => {}
@@ -580,6 +589,20 @@ fn handle_export(state: &mut AppState, key: KeyEvent) {
     match key.code {
         KeyCode::Esc => {
             state.mode = Mode::Normal;
+        }
+        _ => {}
+    }
+}
+
+/// Handle about dialog
+fn handle_about(state: &mut AppState, key: KeyEvent) {
+    match key.code {
+        KeyCode::Esc | KeyCode::Enter | KeyCode::Char('q') => {
+            state.mode = Mode::Normal;
+        }
+        KeyCode::Char('G') | KeyCode::Char('g') => {
+            // Open GitHub repo
+            let _ = open::that("https://github.com/ricardodantas/tickit");
         }
         _ => {}
     }

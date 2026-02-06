@@ -71,6 +71,10 @@ pub fn render(frame: &mut Frame, state: &AppState) {
     if matches!(state.mode, Mode::AddTag | Mode::EditTag) {
         render_simple_editor(frame, state, "Tag");
     }
+
+    if state.mode == Mode::About {
+        render_about_dialog(frame, state);
+    }
 }
 
 /// Render the tab bar
@@ -347,7 +351,7 @@ fn render_status_bar(frame: &mut Frame, state: &AppState, area: Rect) {
         msg.clone()
     } else {
         format!(
-            " {} {} │ ? Help │ Ctrl+T Theme │ q Quit",
+            " {} {} │ ? Help │ t Theme │ A About │ q Quit",
             ICON,
             state.theme.name()
         )
@@ -363,7 +367,7 @@ fn render_status_bar(frame: &mut Frame, state: &AppState, area: Rect) {
 /// Render help popup
 fn render_help_popup(frame: &mut Frame, state: &AppState) {
     let colors = state.theme.colors();
-    let area = centered_rect(60, 70, frame.area());
+    let area = centered_rect(60, 80, frame.area());
 
     frame.render_widget(Clear, area);
 
@@ -379,6 +383,14 @@ fn render_help_popup(frame: &mut Frame, state: &AppState) {
         Line::from(vec![
             Span::styled("  k/↑  ", colors.key_hint()),
             Span::raw("Move up"),
+        ]),
+        Line::from(vec![
+            Span::styled("  g    ", colors.key_hint()),
+            Span::raw("Go to top"),
+        ]),
+        Line::from(vec![
+            Span::styled("  G    ", colors.key_hint()),
+            Span::raw("Go to bottom"),
         ]),
         Line::from(vec![
             Span::styled("  h/←  ", colors.key_hint()),
@@ -402,7 +414,7 @@ fn render_help_popup(frame: &mut Frame, state: &AppState) {
         ]),
         Line::from(""),
         Line::from(vec![
-            Span::styled("  a/n  ", colors.key_hint()),
+            Span::styled("  n    ", colors.key_hint()),
             Span::raw("Add new task"),
         ]),
         Line::from(vec![
@@ -435,8 +447,12 @@ fn render_help_popup(frame: &mut Frame, state: &AppState) {
         ]),
         Line::from(""),
         Line::from(vec![
-            Span::styled("  Ctrl+T  ", colors.key_hint()),
+            Span::styled("  t    ", colors.key_hint()),
             Span::raw("Theme picker"),
+        ]),
+        Line::from(vec![
+            Span::styled("  A    ", colors.key_hint()),
+            Span::raw("About"),
         ]),
         Line::from(vec![
             Span::styled("  r    ", colors.key_hint()),
@@ -817,6 +833,105 @@ fn centered_rect(percent_x: u16, percent_y: u16, area: Rect) -> Rect {
             Constraint::Percentage((100 - percent_x) / 2),
         ])
         .split(popup_layout[1])[1]
+}
+
+/// Render about dialog
+fn render_about_dialog(frame: &mut Frame, state: &AppState) {
+    let colors = state.theme.colors();
+    let area = centered_rect(70, 60, frame.area());
+
+    frame.render_widget(Clear, area);
+
+    let version = env!("CARGO_PKG_VERSION");
+    let repo = "https://github.com/ricardodantas/tickit";
+
+    let logo = [
+        "████████╗██╗ ██████╗██╗  ██╗██╗████████╗",
+        "╚══██╔══╝██║██╔════╝██║ ██╔╝██║╚══██╔══╝",
+        "   ██║   ██║██║     █████╔╝ ██║   ██║   ",
+        "   ██║   ██║██║     ██╔═██╗ ██║   ██║   ",
+        "   ██║   ██║╚██████╗██║  ██╗██║   ██║   ",
+        "   ╚═╝   ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝   ╚═╝   ",
+    ];
+
+    let mut lines: Vec<Line> = logo
+        .iter()
+        .map(|line| Line::from(Span::styled(*line, Style::default().fg(colors.primary))))
+        .collect();
+
+    lines.extend([
+        Line::from(""),
+        Line::from(Span::styled(
+            "✓ get stuff done",
+            Style::default()
+                .fg(colors.fg)
+                .add_modifier(Modifier::ITALIC),
+        )),
+        Line::from(""),
+        Line::from(Span::styled(
+            "A stunning terminal-based task manager",
+            colors.text_muted(),
+        )),
+        Line::from(""),
+        Line::from(vec![
+            Span::styled("Version: ", colors.text_muted()),
+            Span::styled(
+                version,
+                Style::default()
+                    .fg(colors.primary)
+                    .add_modifier(Modifier::BOLD),
+            ),
+        ]),
+        Line::from(""),
+        Line::from(vec![
+            Span::styled("Author: ", colors.text_muted()),
+            Span::styled("Ricardo Dantas", colors.text()),
+        ]),
+        Line::from(vec![
+            Span::styled("License: ", colors.text_muted()),
+            Span::styled("MIT", colors.text()),
+        ]),
+        Line::from(vec![
+            Span::styled("Repo: ", colors.text_muted()),
+            Span::styled(repo, Style::default().fg(colors.primary)),
+        ]),
+        Line::from(""),
+        Line::from(Span::styled(
+            "Built with Rust 🦀 + Ratatui",
+            colors.text_muted().add_modifier(Modifier::ITALIC),
+        )),
+        Line::from(""),
+        Line::from(vec![
+            Span::styled(
+                " [G] ",
+                Style::default()
+                    .fg(colors.primary)
+                    .add_modifier(Modifier::BOLD),
+            ),
+            Span::raw("Open GitHub"),
+            Span::raw("    "),
+            Span::styled(" [Esc] ", colors.text_muted()),
+            Span::raw("Close"),
+        ]),
+    ]);
+
+    let paragraph = Paragraph::new(lines)
+        .alignment(Alignment::Center)
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_type(BorderType::Rounded)
+                .border_style(Style::default().fg(colors.primary))
+                .style(Style::default().bg(colors.bg))
+                .title(" ✓ About Tickit ")
+                .title_style(
+                    Style::default()
+                        .fg(colors.primary)
+                        .add_modifier(Modifier::BOLD),
+                ),
+        );
+
+    frame.render_widget(paragraph, area);
 }
 
 /// Parse a hex color string
