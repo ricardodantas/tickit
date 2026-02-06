@@ -5,6 +5,7 @@
 //! - CLI for quick task management
 //! - Lists and tags for organization
 //! - SQLite storage
+//! - Optional sync with self-hosted server
 //! - Export to multiple formats
 
 pub mod app;
@@ -12,11 +13,13 @@ pub mod config;
 pub mod db;
 pub mod export;
 pub mod models;
+pub mod sync;
 pub mod theme;
 
-pub use config::Config;
+pub use config::{Config, SyncConfig};
 pub use db::Database;
 pub use models::{ExportFormat, List, Priority, Tag, Task};
+pub use sync::{SyncClient, SyncRecord, SyncRequest, SyncResponse, SyncStatus};
 pub use theme::Theme;
 
 /// Current version from Cargo.toml

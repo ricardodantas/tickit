@@ -27,6 +27,28 @@ pub struct Config {
     /// Enable vim-like keybindings
     #[serde(default = "default_vim_mode")]
     pub vim_mode: bool,
+
+    /// Sync configuration (optional)
+    #[serde(default)]
+    pub sync: SyncConfig,
+}
+
+/// Sync configuration
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct SyncConfig {
+    /// Enable sync feature
+    #[serde(default)]
+    pub enabled: bool,
+
+    /// Sync server URL (e.g., "https://sync.example.com")
+    pub server: Option<String>,
+
+    /// API token for authentication
+    pub token: Option<String>,
+
+    /// Auto-sync interval in seconds (0 = manual only)
+    #[serde(default = "default_sync_interval")]
+    pub interval_secs: u64,
 }
 
 fn default_show_completed() -> bool {
@@ -41,6 +63,10 @@ fn default_vim_mode() -> bool {
     true
 }
 
+fn default_sync_interval() -> u64 {
+    300 // 5 minutes
+}
+
 impl Default for Config {
     fn default() -> Self {
         Self {
@@ -49,6 +75,7 @@ impl Default for Config {
             default_list_id: None,
             date_format: default_date_format(),
             vim_mode: default_vim_mode(),
+            sync: SyncConfig::default(),
         }
     }
 }

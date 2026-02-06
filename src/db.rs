@@ -98,6 +98,21 @@ impl Database {
             CREATE INDEX IF NOT EXISTS idx_tasks_priority ON tasks(priority);
             CREATE INDEX IF NOT EXISTS idx_task_tags_task ON task_tags(task_id);
             CREATE INDEX IF NOT EXISTS idx_task_tags_tag ON task_tags(tag_id);
+
+            -- Sync tracking table (for deleted records)
+            CREATE TABLE IF NOT EXISTS sync_tombstones (
+                id TEXT PRIMARY KEY,
+                record_type TEXT NOT NULL,
+                deleted_at TEXT NOT NULL
+            );
+
+            -- Sync state table
+            CREATE TABLE IF NOT EXISTS sync_state (
+                key TEXT PRIMARY KEY,
+                value TEXT NOT NULL
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_tombstones_deleted ON sync_tombstones(deleted_at);
             "#,
         )?;
 
@@ -521,6 +536,284 @@ impl Database {
         self.conn
             .query_row(sql, [], |row| row.get(0))
             .map_err(Into::into)
+    }
+
+    // ==================== Sync ====================
+
+    /// Record a tombstone for a deleted record (for sync)
+    pub fn record_tombstone(&self, id: Uuid, record_type: &str) -> Result<()> {
+        self.conn.execute(
+            "INSERT OR REPLACE INTO sync_tombstones (id, record_type, deleted_at) VALUES (?1, ?2, ?3)",
+            params![id.to_string(), record_type, chrono::Utc::now().to_rfc3339()],
+        )?;
+        Ok(())
+    }
+
+    /// Get tombstones since a given time
+    pub fn get_tombstones_since(
+        &self,
+        since: chrono::DateTime<chrono::Utc>,
+    ) -> Result<Vec<(Uuid, String, chrono::DateTime<chrono::Utc>)>> {
+        let mut stmt = self.conn.prepare(
+            "SELECT id, record_type, deleted_at FROM sync_tombstones WHERE deleted_at > ?1",
+        )?;
+
+        let rows = stmt.query_map(params![since.to_rfc3339()], |row| {
+            Ok((
+                Uuid::parse_str(&row.get::<_, String>(0)?).unwrap(),
+                row.get::<_, String>(1)?,
+                chrono::DateTime::parse_from_rfc3339(&row.get::<_, String>(2)?)
+                    .unwrap()
+                    .with_timezone(&chrono::Utc),
+            ))
+        })?;
+
+        rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
+    }
+
+    /// Get all tombstones
+    pub fn get_all_tombstones(&self) -> Result<Vec<(Uuid, String, chrono::DateTime<chrono::Utc>)>> {
+        let mut stmt = self
+            .conn
+            .prepare("SELECT id, record_type, deleted_at FROM sync_tombstones")?;
+
+        let rows = stmt.query_map([], |row| {
+            Ok((
+                Uuid::parse_str(&row.get::<_, String>(0)?).unwrap(),
+                row.get::<_, String>(1)?,
+                chrono::DateTime::parse_from_rfc3339(&row.get::<_, String>(2)?)
+                    .unwrap()
+                    .with_timezone(&chrono::Utc),
+            ))
+        })?;
+
+        rows.collect::<Result<Vec<_>, _>>().map_err(Into::into)
+    }
+
+    /// Clear old tombstones (older than given time)
+    pub fn clear_old_tombstones(&self, older_than: chrono::DateTime<chrono::Utc>) -> Result<usize> {
+        let count = self.conn.execute(
+            "DELETE FROM sync_tombstones WHERE deleted_at < ?1",
+            params![older_than.to_rfc3339()],
+        )?;
+        Ok(count)
+    }
+
+    /// Get sync state value
+    pub fn get_sync_state(&self, key: &str) -> Result<Option<String>> {
+        let result = self.conn.query_row(
+            "SELECT value FROM sync_state WHERE key = ?1",
+            params![key],
+            |row| row.get(0),
+        );
+
+        match result {
+            Ok(value) => Ok(Some(value)),
+            Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+            Err(e) => Err(e.into()),
+        }
+    }
+
+    /// Set sync state value
+    pub fn set_sync_state(&self, key: &str, value: &str) -> Result<()> {
+        self.conn.execute(
+            "INSERT OR REPLACE INTO sync_state (key, value) VALUES (?1, ?2)",
+            params![key, value],
+        )?;
+        Ok(())
+    }
+
+    /// Get last sync timestamp
+    pub fn get_last_sync(&self) -> Result<Option<chrono::DateTime<chrono::Utc>>> {
+        if let Some(value) = self.get_sync_state("last_sync")? {
+            Ok(chrono::DateTime::parse_from_rfc3339(&value)
+                .ok()
+                .map(|dt| dt.with_timezone(&chrono::Utc)))
+        } else {
+            Ok(None)
+        }
+    }
+
+    /// Set last sync timestamp
+    pub fn set_last_sync(&self, timestamp: chrono::DateTime<chrono::Utc>) -> Result<()> {
+        self.set_sync_state("last_sync", &timestamp.to_rfc3339())
+    }
+
+    /// Get tasks modified since a given time
+    pub fn get_tasks_since(&self, since: chrono::DateTime<chrono::Utc>) -> Result<Vec<Task>> {
+        let mut stmt = self
+            .conn
+            .prepare("SELECT id FROM tasks WHERE updated_at > ?1")?;
+
+        let task_ids: Vec<String> = stmt
+            .query_map(params![since.to_rfc3339()], |row| row.get(0))?
+            .collect::<Result<Vec<_>, _>>()?;
+
+        let mut result = Vec::new();
+        for task_id in task_ids {
+            if let Ok(task) = self.get_task_by_id(&task_id) {
+                result.push(task);
+            }
+        }
+
+        Ok(result)
+    }
+
+    /// Get a task by ID
+    fn get_task_by_id(&self, task_id: &str) -> Result<Task> {
+        let mut stmt = self.conn.prepare(
+            "SELECT id, title, description, url, priority, completed, list_id, 
+             created_at, updated_at, completed_at, due_date FROM tasks WHERE id = ?1",
+        )?;
+
+        let task = stmt.query_row(params![task_id], |row| {
+            let priority_str: String = row.get(4)?;
+            let priority = match priority_str.as_str() {
+                "low" => Priority::Low,
+                "high" => Priority::High,
+                "urgent" => Priority::Urgent,
+                _ => Priority::Medium,
+            };
+
+            Ok(Task {
+                id: Uuid::parse_str(&row.get::<_, String>(0)?).unwrap(),
+                title: row.get(1)?,
+                description: row.get(2)?,
+                url: row.get(3)?,
+                priority,
+                completed: row.get::<_, i32>(5)? != 0,
+                list_id: Uuid::parse_str(&row.get::<_, String>(6)?).unwrap(),
+                tag_ids: Vec::new(),
+                created_at: chrono::DateTime::parse_from_rfc3339(&row.get::<_, String>(7)?)
+                    .unwrap()
+                    .with_timezone(&chrono::Utc),
+                updated_at: chrono::DateTime::parse_from_rfc3339(&row.get::<_, String>(8)?)
+                    .unwrap()
+                    .with_timezone(&chrono::Utc),
+                completed_at: row
+                    .get::<_, Option<String>>(9)?
+                    .and_then(|s| chrono::DateTime::parse_from_rfc3339(&s).ok())
+                    .map(|dt| dt.with_timezone(&chrono::Utc)),
+                due_date: row
+                    .get::<_, Option<String>>(10)?
+                    .and_then(|s| chrono::DateTime::parse_from_rfc3339(&s).ok())
+                    .map(|dt| dt.with_timezone(&chrono::Utc)),
+            })
+        })?;
+
+        let mut task = task;
+        task.tag_ids = self.get_task_tags(task.id)?;
+        Ok(task)
+    }
+
+    /// Get lists modified since a given time
+    pub fn get_lists_since(&self, since: chrono::DateTime<chrono::Utc>) -> Result<Vec<List>> {
+        let mut stmt = self.conn.prepare(
+            "SELECT id, name, description, icon, color, is_inbox, sort_order, created_at, updated_at 
+             FROM lists WHERE updated_at > ?1"
+        )?;
+
+        let lists = stmt.query_map(params![since.to_rfc3339()], |row| {
+            Ok(List {
+                id: Uuid::parse_str(&row.get::<_, String>(0)?).unwrap(),
+                name: row.get(1)?,
+                description: row.get(2)?,
+                icon: row.get(3)?,
+                color: row.get(4)?,
+                is_inbox: row.get::<_, i32>(5)? != 0,
+                sort_order: row.get(6)?,
+                created_at: chrono::DateTime::parse_from_rfc3339(&row.get::<_, String>(7)?)
+                    .unwrap()
+                    .with_timezone(&chrono::Utc),
+                updated_at: chrono::DateTime::parse_from_rfc3339(&row.get::<_, String>(8)?)
+                    .unwrap()
+                    .with_timezone(&chrono::Utc),
+            })
+        })?;
+
+        lists.collect::<Result<Vec<_>, _>>().map_err(Into::into)
+    }
+
+    /// Upsert a task (insert or update based on updated_at)
+    pub fn upsert_task(&self, task: &Task) -> Result<()> {
+        // Check if task exists and compare timestamps
+        let existing = self.conn.query_row(
+            "SELECT updated_at FROM tasks WHERE id = ?1",
+            params![task.id.to_string()],
+            |row| row.get::<_, String>(0),
+        );
+
+        match existing {
+            Ok(existing_updated) => {
+                let existing_dt = chrono::DateTime::parse_from_rfc3339(&existing_updated)
+                    .unwrap()
+                    .with_timezone(&chrono::Utc);
+                // Only update if incoming is newer
+                if task.updated_at > existing_dt {
+                    self.update_task(task)?;
+                }
+            }
+            Err(rusqlite::Error::QueryReturnedNoRows) => {
+                self.insert_task(task)?;
+            }
+            Err(e) => return Err(e.into()),
+        }
+
+        Ok(())
+    }
+
+    /// Upsert a list (insert or update based on updated_at)
+    pub fn upsert_list(&self, list: &List) -> Result<()> {
+        let existing = self.conn.query_row(
+            "SELECT updated_at FROM lists WHERE id = ?1",
+            params![list.id.to_string()],
+            |row| row.get::<_, String>(0),
+        );
+
+        match existing {
+            Ok(existing_updated) => {
+                let existing_dt = chrono::DateTime::parse_from_rfc3339(&existing_updated)
+                    .unwrap()
+                    .with_timezone(&chrono::Utc);
+                if list.updated_at > existing_dt {
+                    self.update_list(list)?;
+                }
+            }
+            Err(rusqlite::Error::QueryReturnedNoRows) => {
+                self.insert_list(list)?;
+            }
+            Err(e) => return Err(e.into()),
+        }
+
+        Ok(())
+    }
+
+    /// Delete a task by ID (used by sync to apply remote deletes)
+    pub fn delete_task_by_id(&self, task_id: Uuid) -> Result<()> {
+        self.conn.execute(
+            "DELETE FROM tasks WHERE id = ?1",
+            params![task_id.to_string()],
+        )?;
+        Ok(())
+    }
+
+    /// Delete a list by ID (used by sync to apply remote deletes)
+    pub fn delete_list_by_id(&self, list_id: Uuid) -> Result<()> {
+        // Don't delete inbox
+        self.conn.execute(
+            "DELETE FROM lists WHERE id = ?1 AND is_inbox = 0",
+            params![list_id.to_string()],
+        )?;
+        Ok(())
+    }
+
+    /// Delete a tag by ID (used by sync to apply remote deletes)
+    pub fn delete_tag_by_id(&self, tag_id: Uuid) -> Result<()> {
+        self.conn.execute(
+            "DELETE FROM tags WHERE id = ?1",
+            params![tag_id.to_string()],
+        )?;
+        Ok(())
     }
 }
 
