@@ -49,6 +49,10 @@ enum Commands {
         /// Tags to attach (comma-separated)
         #[arg(short, long)]
         tags: Option<String>,
+
+        /// Due date (YYYY-MM-DD format)
+        #[arg(long)]
+        due: Option<String>,
     },
 
     /// List tasks
@@ -193,13 +197,15 @@ fn main() -> Result<()> {
             priority,
             list,
             tags,
+            due,
         }) => {
             let db = Database::open()?;
-            
+
             // Find list
             let list_id = if let Some(list_name) = list {
                 let lists = db.get_lists()?;
-                lists.iter()
+                lists
+                    .iter()
                     .find(|l| l.name.to_lowercase() == list_name.to_lowercase())
                     .map(|l| l.id)
                     .unwrap_or_else(|| db.get_inbox().unwrap().id)
@@ -215,17 +221,28 @@ fn main() -> Result<()> {
                 _ => Priority::Medium,
             };
 
+            // Parse due date
+            let due_date = due.and_then(|s| {
+                chrono::NaiveDate::parse_from_str(&s, "%Y-%m-%d")
+                    .ok()
+                    .map(|date| date.and_hms_opt(23, 59, 59).unwrap().and_utc())
+            });
+
             // Create task
             let mut task = Task::new(&title, list_id);
             task.priority = priority;
             task.description = description;
             task.url = url;
+            task.due_date = due_date;
 
             // Add tags
             if let Some(tag_str) = tags {
                 let db_tags = db.get_tags()?;
                 for tag_name in tag_str.split(',').map(|s| s.trim()) {
-                    if let Some(tag) = db_tags.iter().find(|t| t.name.to_lowercase() == tag_name.to_lowercase()) {
+                    if let Some(tag) = db_tags
+                        .iter()
+                        .find(|t| t.name.to_lowercase() == tag_name.to_lowercase())
+                    {
                         task.tag_ids.push(tag.id);
                     }
                 }
@@ -235,14 +252,20 @@ fn main() -> Result<()> {
             println!("✓ Added: {}", title);
         }
 
-        Some(Commands::List { list, all, tag, json }) => {
+        Some(Commands::List {
+            list,
+            all,
+            tag,
+            json,
+        }) => {
             let db = Database::open()?;
             let lists = db.get_lists()?;
             let tags = db.get_tags()?;
 
             // Find list filter
             let list_id = list.and_then(|name| {
-                lists.iter()
+                lists
+                    .iter()
                     .find(|l| l.name.to_lowercase() == name.to_lowercase())
                     .map(|l| l.id)
             });
@@ -260,26 +283,19 @@ fn main() -> Result<()> {
             if json {
                 let output = serde_json::to_string_pretty(&tasks)?;
                 println!("{}", output);
+            } else if tasks.is_empty() {
+                println!("No tasks found.");
             } else {
-                if tasks.is_empty() {
-                    println!("No tasks found.");
-                } else {
-                    for task in tasks {
-                        let checkbox = if task.completed { "☑" } else { "☐" };
-                        let priority = task.priority.icon();
-                        let list_name = lists.iter()
-                            .find(|l| l.id == task.list_id)
-                            .map(|l| l.name.as_str())
-                            .unwrap_or("?");
-                        
-                        println!(
-                            "{} {} {} [{}]",
-                            checkbox,
-                            priority,
-                            task.title,
-                            list_name
-                        );
-                    }
+                for task in tasks {
+                    let checkbox = if task.completed { "☑" } else { "☐" };
+                    let priority = task.priority.icon();
+                    let list_name = lists
+                        .iter()
+                        .find(|l| l.id == task.list_id)
+                        .map(|l| l.name.as_str())
+                        .unwrap_or("?");
+
+                    println!("{} {} {} [{}]", checkbox, priority, task.title, list_name);
                 }
             }
         }
@@ -287,7 +303,7 @@ fn main() -> Result<()> {
         Some(Commands::Done { task }) => {
             let db = Database::open()?;
             let tasks = db.get_all_tasks()?;
-            
+
             if let Some(mut t) = find_task(&tasks, &task) {
                 t.complete();
                 db.update_task(&t)?;
@@ -300,7 +316,7 @@ fn main() -> Result<()> {
         Some(Commands::Undo { task }) => {
             let db = Database::open()?;
             let tasks = db.get_all_tasks()?;
-            
+
             if let Some(mut t) = find_task(&tasks, &task) {
                 t.uncomplete();
                 db.update_task(&t)?;
@@ -313,7 +329,7 @@ fn main() -> Result<()> {
         Some(Commands::Delete { task, force }) => {
             let db = Database::open()?;
             let tasks = db.get_all_tasks()?;
-            
+
             if let Some(t) = find_task(&tasks, &task) {
                 if !force {
                     print!("Delete \"{}\"? [y/N] ", t.title);
@@ -352,7 +368,10 @@ fn main() -> Result<()> {
                 }
                 Some(ListCommands::Delete { name }) => {
                     let lists = db.get_lists()?;
-                    if let Some(list) = lists.iter().find(|l| l.name.to_lowercase() == name.to_lowercase()) {
+                    if let Some(list) = lists
+                        .iter()
+                        .find(|l| l.name.to_lowercase() == name.to_lowercase())
+                    {
                         if list.is_inbox {
                             println!("Cannot delete inbox.");
                         } else {
@@ -390,7 +409,10 @@ fn main() -> Result<()> {
                 }
                 Some(TagCommands::Delete { name }) => {
                     let tags = db.get_tags()?;
-                    if let Some(tag) = tags.iter().find(|t| t.name.to_lowercase() == name.to_lowercase()) {
+                    if let Some(tag) = tags
+                        .iter()
+                        .find(|t| t.name.to_lowercase() == name.to_lowercase())
+                    {
                         db.delete_tag(tag.id)?;
                         println!("✗ Deleted tag: {}", name);
                     } else {
@@ -400,14 +422,19 @@ fn main() -> Result<()> {
             }
         }
 
-        Some(Commands::Export { output, format, list }) => {
+        Some(Commands::Export {
+            output,
+            format,
+            list,
+        }) => {
             let db = Database::open()?;
             let lists = db.get_lists()?;
             let tags = db.get_tags()?;
 
             // Filter by list
             let list_id = list.and_then(|name| {
-                lists.iter()
+                lists
+                    .iter()
                     .find(|l| l.name.to_lowercase() == name.to_lowercase())
                     .map(|l| l.id)
             });
@@ -450,7 +477,8 @@ fn find_task(tasks: &[Task], query: &str) -> Option<Task> {
 
     // Try partial title match
     let query_lower = query.to_lowercase();
-    tasks.iter()
+    tasks
+        .iter()
         .find(|t| t.title.to_lowercase().contains(&query_lower))
         .cloned()
 }

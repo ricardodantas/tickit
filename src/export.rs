@@ -115,7 +115,11 @@ fn export_markdown<W: Write>(
 ) -> Result<()> {
     writeln!(writer, "# Tasks")?;
     writeln!(writer)?;
-    writeln!(writer, "Exported: {}", Utc::now().format("%Y-%m-%d %H:%M:%S UTC"))?;
+    writeln!(
+        writer,
+        "Exported: {}",
+        Utc::now().format("%Y-%m-%d %H:%M:%S UTC")
+    )?;
     writeln!(writer)?;
 
     // Group tasks by list
@@ -141,7 +145,9 @@ fn export_markdown<W: Write>(
 
             // Tags inline
             if !task.tag_ids.is_empty() {
-                let tag_names: Vec<_> = task.tag_ids.iter()
+                let tag_names: Vec<_> = task
+                    .tag_ids
+                    .iter()
                     .filter_map(|id| tags.iter().find(|t| t.id == *id))
                     .map(|t| format!("`{}`", t.name))
                     .collect();
@@ -188,12 +194,15 @@ fn export_csv<W: Write>(
     )?;
 
     for task in tasks {
-        let list_name = lists.iter()
+        let list_name = lists
+            .iter()
             .find(|l| l.id == task.list_id)
             .map(|l| l.name.as_str())
             .unwrap_or("");
 
-        let tag_names: Vec<_> = task.tag_ids.iter()
+        let tag_names: Vec<_> = task
+            .tag_ids
+            .iter()
             .filter_map(|id| tags.iter().find(|t| t.id == *id))
             .map(|t| t.name.as_str())
             .collect();
@@ -208,7 +217,9 @@ fn export_csv<W: Write>(
             task.completed,
             csv_escape(list_name),
             csv_escape(&tag_names.join("; ")),
-            task.due_date.map(|d| d.format("%Y-%m-%d").to_string()).unwrap_or_default(),
+            task.due_date
+                .map(|d| d.format("%Y-%m-%d").to_string())
+                .unwrap_or_default(),
             task.created_at.format("%Y-%m-%d %H:%M:%S"),
         )?;
     }

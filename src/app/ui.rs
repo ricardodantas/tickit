@@ -107,7 +107,12 @@ fn render_tabs(frame: &mut Frame, state: &AppState, area: Rect) {
                 .border_style(colors.block()),
         )
         .highlight_style(colors.tab_active())
-        .select(View::all().iter().position(|v| *v == state.view).unwrap_or(0));
+        .select(
+            View::all()
+                .iter()
+                .position(|v| *v == state.view)
+                .unwrap_or(0),
+        );
 
     frame.render_widget(tabs, area);
 }
@@ -150,7 +155,10 @@ fn render_tasks_view(frame: &mut Frame, state: &AppState, area: Rect) {
     } else {
         colors.text()
     };
-    let task_count = state.db.get_total_task_count(state.show_completed).unwrap_or(0);
+    let task_count = state
+        .db
+        .get_total_task_count(state.show_completed)
+        .unwrap_or(0);
     list_items.push(ListItem::new(Line::from(vec![
         Span::styled("  📚 ", all_style),
         Span::styled("All", all_style),
@@ -165,7 +173,10 @@ fn render_tasks_view(frame: &mut Frame, state: &AppState, area: Rect) {
         } else {
             colors.text()
         };
-        let count = state.db.get_task_count(list.id, state.show_completed).unwrap_or(0);
+        let count = state
+            .db
+            .get_task_count(list.id, state.show_completed)
+            .unwrap_or(0);
         list_items.push(ListItem::new(Line::from(vec![
             Span::styled(format!("  {} ", list.icon), style),
             Span::styled(&list.name, style),
@@ -173,14 +184,13 @@ fn render_tasks_view(frame: &mut Frame, state: &AppState, area: Rect) {
         ])));
     }
 
-    let sidebar = List::new(list_items)
-        .block(
-            Block::default()
-                .title(" Lists ")
-                .borders(Borders::ALL)
-                .border_type(BorderType::Rounded)
-                .border_style(sidebar_style),
-        );
+    let sidebar = List::new(list_items).block(
+        Block::default()
+            .title(" Lists ")
+            .borders(Borders::ALL)
+            .border_type(BorderType::Rounded)
+            .border_style(sidebar_style),
+    );
 
     frame.render_widget(sidebar, chunks[0]);
 
@@ -195,12 +205,15 @@ fn render_tasks_view(frame: &mut Frame, state: &AppState, area: Rect) {
     let list_name = if state.list_index == 0 {
         "All Tasks".to_string()
     } else {
-        state.lists.get(state.list_index - 1)
+        state
+            .lists
+            .get(state.list_index - 1)
             .map(|l| l.name.clone())
             .unwrap_or_else(|| "Tasks".to_string())
     };
 
-    let task_items: Vec<ListItem> = state.tasks
+    let task_items: Vec<ListItem> = state
+        .tasks
         .iter()
         .enumerate()
         .map(|(i, task)| {
@@ -219,7 +232,9 @@ fn render_tasks_view(frame: &mut Frame, state: &AppState, area: Rect) {
             };
 
             let title_style = if task.completed {
-                base_style.add_modifier(Modifier::CROSSED_OUT).fg(colors.fg_muted)
+                base_style
+                    .add_modifier(Modifier::CROSSED_OUT)
+                    .fg(colors.fg_muted)
             } else {
                 base_style
             };
@@ -233,6 +248,24 @@ fn render_tasks_view(frame: &mut Frame, state: &AppState, area: Rect) {
                 Span::styled(&task.title, title_style),
             ];
 
+            // Add due date indicator
+            if let Some(due_date) = task.due_date {
+                let now = chrono::Utc::now();
+                let is_overdue = due_date < now && !task.completed;
+                let is_soon = due_date < now + chrono::Duration::days(2) && !is_overdue;
+
+                let due_style = if is_overdue {
+                    colors.text_error()
+                } else if is_soon {
+                    colors.text_warning()
+                } else {
+                    colors.text_muted()
+                };
+
+                let due_str = due_date.format("%m/%d").to_string();
+                spans.push(Span::styled(format!(" 📅{}", due_str), due_style));
+            }
+
             // Add URL indicator
             if task.url.is_some() {
                 spans.push(Span::styled(" 🔗", colors.text_info()));
@@ -241,22 +274,28 @@ fn render_tasks_view(frame: &mut Frame, state: &AppState, area: Rect) {
             // Add tag indicators
             if !task.tag_ids.is_empty() {
                 let tag_count = task.tag_ids.len();
-                spans.push(Span::styled(format!(" [{}]", tag_count), colors.text_secondary()));
+                spans.push(Span::styled(
+                    format!(" [{}]", tag_count),
+                    colors.text_secondary(),
+                ));
             }
 
             ListItem::new(Line::from(spans))
         })
         .collect();
 
-    let show_status = if state.show_completed { "" } else { " (hiding completed)" };
-    let tasks_block = List::new(task_items)
-        .block(
-            Block::default()
-                .title(format!(" {} {} ", list_name, show_status))
-                .borders(Borders::ALL)
-                .border_type(BorderType::Rounded)
-                .border_style(main_style),
-        );
+    let show_status = if state.show_completed {
+        ""
+    } else {
+        " (hiding completed)"
+    };
+    let tasks_block = List::new(task_items).block(
+        Block::default()
+            .title(format!(" {} {} ", list_name, show_status))
+            .borders(Borders::ALL)
+            .border_type(BorderType::Rounded)
+            .border_style(main_style),
+    );
 
     frame.render_widget(tasks_block, chunks[1]);
 }
@@ -265,7 +304,8 @@ fn render_tasks_view(frame: &mut Frame, state: &AppState, area: Rect) {
 fn render_lists_view(frame: &mut Frame, state: &AppState, area: Rect) {
     let colors = state.theme.colors();
 
-    let list_items: Vec<ListItem> = state.lists
+    let list_items: Vec<ListItem> = state
+        .lists
         .iter()
         .enumerate()
         .map(|(i, list)| {
@@ -286,14 +326,13 @@ fn render_lists_view(frame: &mut Frame, state: &AppState, area: Rect) {
         })
         .collect();
 
-    let lists = List::new(list_items)
-        .block(
-            Block::default()
-                .title(" Lists ")
-                .borders(Borders::ALL)
-                .border_type(BorderType::Rounded)
-                .border_style(colors.block_focus()),
-        );
+    let lists = List::new(list_items).block(
+        Block::default()
+            .title(" Lists ")
+            .borders(Borders::ALL)
+            .border_type(BorderType::Rounded)
+            .border_style(colors.block_focus()),
+    );
 
     frame.render_widget(lists, area);
 }
@@ -302,7 +341,8 @@ fn render_lists_view(frame: &mut Frame, state: &AppState, area: Rect) {
 fn render_tags_view(frame: &mut Frame, state: &AppState, area: Rect) {
     let colors = state.theme.colors();
 
-    let tag_items: Vec<ListItem> = state.tags
+    let tag_items: Vec<ListItem> = state
+        .tags
         .iter()
         .enumerate()
         .map(|(i, tag)| {
@@ -368,8 +408,8 @@ fn render_status_bar(frame: &mut Frame, state: &AppState, area: Rect) {
         ]
     };
 
-    let status = Paragraph::new(Line::from(content))
-        .style(Style::default().bg(colors.bg_secondary));
+    let status =
+        Paragraph::new(Line::from(content)).style(Style::default().bg(colors.bg_secondary));
     frame.render_widget(status, area);
 }
 
@@ -517,18 +557,17 @@ fn render_theme_picker(frame: &mut Frame, state: &AppState) {
                 colors.text()
             };
             let marker = if selected { "► " } else { "  " };
-            ListItem::new(format!("{}{}", marker, theme.name())).style(style)
+            ListItem::new(format!("{}{}", marker, theme.display_name())).style(style)
         })
         .collect();
 
-    let themes = List::new(theme_items)
-        .block(
-            Block::default()
-                .title(" Theme ")
-                .borders(Borders::ALL)
-                .border_type(BorderType::Rounded)
-                .border_style(colors.block_focus()),
-        );
+    let themes = List::new(theme_items).block(
+        Block::default()
+            .title(" Theme ")
+            .borders(Borders::ALL)
+            .border_type(BorderType::Rounded)
+            .border_style(colors.block_focus()),
+    );
 
     frame.render_widget(themes, area);
 }
@@ -585,9 +624,10 @@ fn render_task_editor(frame: &mut Frame, state: &AppState) {
         .constraints([
             Constraint::Length(3), // Title input
             Constraint::Length(3), // Description input
+            Constraint::Length(3), // Due Date input
             Constraint::Length(3), // Priority
             Constraint::Length(3), // List
-            Constraint::Min(6),    // Tags (expanded)
+            Constraint::Min(5),    // Tags (expanded)
             Constraint::Length(1), // Help
         ])
         .split(area);
@@ -599,28 +639,24 @@ fn render_task_editor(frame: &mut Frame, state: &AppState) {
     } else {
         colors.block()
     };
-    
+
     // Show the correct title value depending on focus
     let title_display = if title_focused {
         state.input_buffer.as_str()
     } else {
         state.editor_title_buffer.as_str()
     };
-    
-    let title_input = Paragraph::new(title_display)
-        .block(
-            Block::default()
-                .title(" Title ")
-                .borders(Borders::ALL)
-                .border_style(title_style),
-        );
+
+    let title_input = Paragraph::new(title_display).block(
+        Block::default()
+            .title(" Title ")
+            .borders(Borders::ALL)
+            .border_style(title_style),
+    );
     frame.render_widget(title_input, chunks[0]);
-    
+
     if title_focused && !state.editor_adding_tag {
-        frame.set_cursor_position((
-            chunks[0].x + state.cursor_pos as u16 + 1,
-            chunks[0].y + 1,
-        ));
+        frame.set_cursor_position((chunks[0].x + state.cursor_pos as u16 + 1, chunks[0].y + 1));
     }
 
     // Description field
@@ -635,20 +671,51 @@ fn render_task_editor(frame: &mut Frame, state: &AppState) {
     } else {
         state.editor_description_buffer.as_str()
     };
-    let desc_input = Paragraph::new(desc_display)
+    let desc_input = Paragraph::new(desc_display).block(
+        Block::default()
+            .title(" Description (optional) ")
+            .borders(Borders::ALL)
+            .border_style(desc_style),
+    );
+    frame.render_widget(desc_input, chunks[1]);
+
+    if desc_focused && !state.editor_adding_tag {
+        frame.set_cursor_position((chunks[1].x + state.cursor_pos as u16 + 1, chunks[1].y + 1));
+    }
+
+    // Due Date field
+    let due_focused = state.editor_field == EditorField::DueDate;
+    let due_style = if due_focused {
+        colors.block_focus()
+    } else {
+        colors.block()
+    };
+    let due_display = if due_focused {
+        state.input_buffer.as_str()
+    } else {
+        state.editor_due_date_buffer.as_str()
+    };
+    let due_placeholder = if due_display.is_empty() {
+        "YYYY-MM-DD"
+    } else {
+        due_display
+    };
+    let due_input = Paragraph::new(due_placeholder)
+        .style(if due_display.is_empty() && !due_focused {
+            colors.text_muted()
+        } else {
+            colors.text()
+        })
         .block(
             Block::default()
-                .title(" Description (optional) ")
+                .title(" Due Date (optional) ")
                 .borders(Borders::ALL)
-                .border_style(desc_style),
+                .border_style(due_style),
         );
-    frame.render_widget(desc_input, chunks[1]);
-    
-    if desc_focused && !state.editor_adding_tag {
-        frame.set_cursor_position((
-            chunks[1].x + state.cursor_pos as u16 + 1,
-            chunks[1].y + 1,
-        ));
+    frame.render_widget(due_input, chunks[2]);
+
+    if due_focused && !state.editor_adding_tag {
+        frame.set_cursor_position((chunks[2].x + state.cursor_pos as u16 + 1, chunks[2].y + 1));
     }
 
     // Priority field
@@ -663,14 +730,13 @@ fn render_task_editor(frame: &mut Frame, state: &AppState) {
         state.editor_priority.icon(),
         state.editor_priority.name()
     );
-    let priority_input = Paragraph::new(priority_text)
-        .block(
-            Block::default()
-                .title(" Priority (j/k to change) ")
-                .borders(Borders::ALL)
-                .border_style(priority_style),
-        );
-    frame.render_widget(priority_input, chunks[2]);
+    let priority_input = Paragraph::new(priority_text).block(
+        Block::default()
+            .title(" Priority (j/k to change) ")
+            .borders(Borders::ALL)
+            .border_style(priority_style),
+    );
+    frame.render_widget(priority_input, chunks[3]);
 
     // List field
     let list_focused = state.editor_field == EditorField::List;
@@ -679,18 +745,18 @@ fn render_task_editor(frame: &mut Frame, state: &AppState) {
     } else {
         colors.block()
     };
-    let list_text = state.lists
+    let list_text = state
+        .lists
         .get(state.editor_list_index)
         .map(|l| format!("{} {}", l.icon, l.name))
         .unwrap_or_else(|| "📥 Inbox".to_string());
-    let list_input = Paragraph::new(list_text)
-        .block(
-            Block::default()
-                .title(" List (j/k to change) ")
-                .borders(Borders::ALL)
-                .border_style(list_style),
-        );
-    frame.render_widget(list_input, chunks[3]);
+    let list_input = Paragraph::new(list_text).block(
+        Block::default()
+            .title(" List (j/k to change) ")
+            .borders(Borders::ALL)
+            .border_style(list_style),
+    );
+    frame.render_widget(list_input, chunks[4]);
 
     // Tags field - show as selectable list
     let tags_focused = state.editor_field == EditorField::Tags;
@@ -700,27 +766,35 @@ fn render_task_editor(frame: &mut Frame, state: &AppState) {
         colors.block()
     };
 
-    let mut tag_items: Vec<ListItem> = state.tags
+    let mut tag_items: Vec<ListItem> = state
+        .tags
         .iter()
         .enumerate()
         .map(|(i, tag)| {
             let is_selected = state.editor_tag_indices.contains(&i);
             let is_cursor = tags_focused && i == state.editor_tag_cursor;
-            
+
             let checkbox = if is_selected { "☑" } else { "☐" };
             let marker = if is_cursor { "► " } else { "  " };
-            
+
             let style = if is_cursor {
                 colors.selected()
             } else {
                 colors.text()
             };
-            
+
             let tag_color = parse_hex_color(&tag.color).unwrap_or(colors.accent);
-            
+
             ListItem::new(Line::from(vec![
                 Span::styled(marker, style),
-                Span::styled(format!("{} ", checkbox), if is_selected { colors.text_success() } else { colors.text_muted() }),
+                Span::styled(
+                    format!("{} ", checkbox),
+                    if is_selected {
+                        colors.text_success()
+                    } else {
+                        colors.text_muted()
+                    },
+                ),
                 Span::styled("● ", Style::default().fg(tag_color)),
                 Span::styled(&tag.name, style),
             ]))
@@ -729,9 +803,13 @@ fn render_task_editor(frame: &mut Frame, state: &AppState) {
 
     // Add "Add new tag" option
     let add_new_cursor = tags_focused && state.editor_tag_cursor == state.tags.len();
-    let add_style = if add_new_cursor { colors.selected() } else { colors.text_muted() };
+    let add_style = if add_new_cursor {
+        colors.selected()
+    } else {
+        colors.text_muted()
+    };
     let add_marker = if add_new_cursor { "► " } else { "  " };
-    
+
     if state.editor_adding_tag {
         // Show input field for new tag
         tag_items.push(ListItem::new(Line::from(vec![
@@ -747,14 +825,13 @@ fn render_task_editor(frame: &mut Frame, state: &AppState) {
         ])));
     }
 
-    let tags_list = List::new(tag_items)
-        .block(
-            Block::default()
-                .title(" Tags (Space: toggle, n: new) ")
-                .borders(Borders::ALL)
-                .border_style(tags_style),
-        );
-    frame.render_widget(tags_list, chunks[4]);
+    let tags_list = List::new(tag_items).block(
+        Block::default()
+            .title(" Tags (Space: toggle, n: new) ")
+            .borders(Borders::ALL)
+            .border_style(tags_style),
+    );
+    frame.render_widget(tags_list, chunks[5]);
 
     // Help text
     let help_text = if state.editor_adding_tag {
@@ -765,7 +842,7 @@ fn render_task_editor(frame: &mut Frame, state: &AppState) {
     let help = Paragraph::new(help_text)
         .style(colors.text_muted())
         .alignment(Alignment::Center);
-    frame.render_widget(help, chunks[5]);
+    frame.render_widget(help, chunks[6]);
 
     // Outer block
     let outer = Block::default()
@@ -801,19 +878,15 @@ fn render_simple_editor(frame: &mut Frame, state: &AppState, item_type: &str) {
         ])
         .split(area);
 
-    let input = Paragraph::new(state.input_buffer.as_str())
-        .block(
-            Block::default()
-                .title(" Name ")
-                .borders(Borders::ALL)
-                .border_style(colors.block_focus()),
-        );
+    let input = Paragraph::new(state.input_buffer.as_str()).block(
+        Block::default()
+            .title(" Name ")
+            .borders(Borders::ALL)
+            .border_style(colors.block_focus()),
+    );
     frame.render_widget(input, chunks[0]);
 
-    frame.set_cursor_position((
-        chunks[0].x + state.cursor_pos as u16 + 1,
-        chunks[0].y + 1,
-    ));
+    frame.set_cursor_position((chunks[0].x + state.cursor_pos as u16 + 1, chunks[0].y + 1));
 
     let help = Paragraph::new("Enter: save │ Esc: cancel")
         .style(colors.text_muted())
@@ -931,21 +1004,19 @@ fn render_about_dialog(frame: &mut Frame, state: &AppState) {
         ]),
     ]);
 
-    let paragraph = Paragraph::new(lines)
-        .alignment(Alignment::Center)
-        .block(
-            Block::default()
-                .borders(Borders::ALL)
-                .border_type(BorderType::Rounded)
-                .border_style(Style::default().fg(colors.primary))
-                .style(Style::default().bg(colors.bg))
-                .title(" ✓ About Tickit ")
-                .title_style(
-                    Style::default()
-                        .fg(colors.primary)
-                        .add_modifier(Modifier::BOLD),
-                ),
-        );
+    let paragraph = Paragraph::new(lines).alignment(Alignment::Center).block(
+        Block::default()
+            .borders(Borders::ALL)
+            .border_type(BorderType::Rounded)
+            .border_style(Style::default().fg(colors.primary))
+            .style(Style::default().bg(colors.bg))
+            .title(" ✓ About Tickit ")
+            .title_style(
+                Style::default()
+                    .fg(colors.primary)
+                    .add_modifier(Modifier::BOLD),
+            ),
+    );
 
     frame.render_widget(paragraph, area);
 }

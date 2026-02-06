@@ -164,6 +164,8 @@ pub struct AppState {
     pub editor_title_buffer: String,
     /// Description buffer for tasks
     pub editor_description_buffer: String,
+    /// Due date buffer for tasks (YYYY-MM-DD format)
+    pub editor_due_date_buffer: String,
 
     // UI state
     /// Show completed tasks
@@ -226,6 +228,7 @@ impl AppState {
             editor_new_tag_buffer: String::new(),
             editor_title_buffer: String::new(),
             editor_description_buffer: String::new(),
+            editor_due_date_buffer: String::new(),
             show_completed,
             confirm_message: String::new(),
             confirm_action: None,
@@ -240,7 +243,7 @@ impl AppState {
         // Set theme index
         state.theme_index = Theme::all()
             .iter()
-            .position(|t| *t == state.theme)
+            .position(|t| *t == state.theme.inner())
             .unwrap_or(0);
 
         Ok(state)
@@ -253,7 +256,7 @@ impl AppState {
         self.refresh_tasks()?;
 
         // Clamp indices
-        if self.list_index > 0 && self.list_index >= self.lists.len() + 1 {
+        if self.list_index > 0 && self.list_index > self.lists.len() {
             self.list_index = self.lists.len();
         }
         if !self.tasks.is_empty() && self.task_index >= self.tasks.len() {
@@ -268,12 +271,18 @@ impl AppState {
 
     /// Refresh tasks based on current filter
     pub fn refresh_tasks(&mut self) -> Result<()> {
-        let completed_filter = if self.show_completed { None } else { Some(false) };
+        let completed_filter = if self.show_completed {
+            None
+        } else {
+            Some(false)
+        };
 
         self.tasks = if let Some(list_id) = self.selected_list_id {
-            self.db.get_tasks_with_filter(Some(list_id), completed_filter, None)?
+            self.db
+                .get_tasks_with_filter(Some(list_id), completed_filter, None)?
         } else {
-            self.db.get_tasks_with_filter(None, completed_filter, None)?
+            self.db
+                .get_tasks_with_filter(None, completed_filter, None)?
         };
 
         // Clamp task index
@@ -338,6 +347,7 @@ impl AppState {
         self.editor_new_tag_buffer.clear();
         self.editor_title_buffer.clear();
         self.editor_description_buffer.clear();
+        self.editor_due_date_buffer.clear();
 
         // Set editor list to current selected list or inbox
         if let Some(list_id) = self.selected_list_id {
@@ -355,8 +365,14 @@ impl AppState {
             self.input_buffer = task.title.clone();
             self.cursor_pos = self.input_buffer.len();
             self.editor_priority = task.priority;
-            self.editor_list_index = self.lists.iter().position(|l| l.id == task.list_id).unwrap_or(0);
-            self.editor_tag_indices = task.tag_ids.iter()
+            self.editor_list_index = self
+                .lists
+                .iter()
+                .position(|l| l.id == task.list_id)
+                .unwrap_or(0);
+            self.editor_tag_indices = task
+                .tag_ids
+                .iter()
                 .filter_map(|tid| self.tags.iter().position(|t| t.id == *tid))
                 .collect();
             self.editor_tag_cursor = 0;
@@ -364,6 +380,10 @@ impl AppState {
             self.editor_new_tag_buffer.clear();
             self.editor_title_buffer = task.title.clone();
             self.editor_description_buffer = task.description.clone().unwrap_or_default();
+            self.editor_due_date_buffer = task
+                .due_date
+                .map(|dt| dt.format("%Y-%m-%d").to_string())
+                .unwrap_or_default();
             self.editing_task = Some(task);
         }
     }
@@ -372,12 +392,16 @@ impl AppState {
     pub fn save_task(&mut self) -> Result<()> {
         // Save current field first
         self.save_current_field_to_buffer();
-        
-        let list_id = self.lists.get(self.editor_list_index)
+
+        let list_id = self
+            .lists
+            .get(self.editor_list_index)
             .map(|l| l.id)
             .unwrap_or_else(|| self.lists.iter().find(|l| l.is_inbox).unwrap().id);
 
-        let tag_ids: Vec<Uuid> = self.editor_tag_indices.iter()
+        let tag_ids: Vec<Uuid> = self
+            .editor_tag_indices
+            .iter()
             .filter_map(|&i| self.tags.get(i).map(|t| t.id))
             .collect();
 
@@ -387,12 +411,25 @@ impl AppState {
         } else {
             self.editor_title_buffer.clone()
         };
-        
+
         // Get description from the appropriate source
         let description = if self.editor_field == EditorField::Description {
-            if self.input_buffer.is_empty() { None } else { Some(self.input_buffer.clone()) }
+            if self.input_buffer.is_empty() {
+                None
+            } else {
+                Some(self.input_buffer.clone())
+            }
+        } else if self.editor_description_buffer.is_empty() {
+            None
         } else {
-            if self.editor_description_buffer.is_empty() { None } else { Some(self.editor_description_buffer.clone()) }
+            Some(self.editor_description_buffer.clone())
+        };
+
+        // Parse due date from buffer
+        let due_date = if self.editor_field == EditorField::DueDate {
+            Self::parse_due_date(&self.input_buffer)
+        } else {
+            Self::parse_due_date(&self.editor_due_date_buffer)
         };
 
         if title.is_empty() {
@@ -407,6 +444,7 @@ impl AppState {
             task.priority = self.editor_priority;
             task.list_id = list_id;
             task.tag_ids = tag_ids;
+            task.due_date = due_date;
             task.updated_at = chrono::Utc::now();
             self.db.update_task(&task)?;
             self.set_status("Task updated");
@@ -416,6 +454,7 @@ impl AppState {
             task.description = description;
             task.priority = self.editor_priority;
             task.tag_ids = tag_ids;
+            task.due_date = due_date;
             self.db.insert_task(&task)?;
             self.set_status("Task created");
         }
@@ -430,7 +469,11 @@ impl AppState {
         if let Some(task) = self.tasks.get_mut(self.task_index) {
             task.toggle();
             self.db.update_task(task)?;
-            let status = if task.completed { "completed" } else { "reopened" };
+            let status = if task.completed {
+                "completed"
+            } else {
+                "reopened"
+            };
             self.set_status(format!("Task {}", status));
             self.refresh_tasks()?;
         }
@@ -563,7 +606,8 @@ impl AppState {
             }
             let name = list.name.clone();
             let id = list.id;
-            self.confirm_message = format!("Delete list \"{}\"? Tasks will be moved to Inbox.", name);
+            self.confirm_message =
+                format!("Delete list \"{}\"? Tasks will be moved to Inbox.", name);
             self.confirm_action = Some(ConfirmAction::DeleteList(id));
             self.mode = Mode::Confirm;
         }
@@ -673,7 +717,7 @@ impl AppState {
 
         let tag = Tag::new(&self.editor_new_tag_buffer);
         self.db.insert_tag(&tag)?;
-        
+
         // Refresh tags and select the new one
         self.tags = self.db.get_tags()?;
         if let Some(idx) = self.tags.iter().position(|t| t.id == tag.id) {
@@ -697,10 +741,11 @@ impl AppState {
     pub fn next_editor_field(&mut self) {
         // Save current field value before switching
         self.save_current_field_to_buffer();
-        
+
         self.editor_field = match self.editor_field {
             EditorField::Title => EditorField::Description,
-            EditorField::Description => EditorField::Priority,
+            EditorField::Description => EditorField::DueDate,
+            EditorField::DueDate => EditorField::Priority,
             EditorField::Priority => EditorField::List,
             EditorField::List => EditorField::Tags,
             EditorField::Tags => EditorField::Title,
@@ -712,11 +757,12 @@ impl AppState {
     pub fn prev_editor_field(&mut self) {
         // Save current field value before switching
         self.save_current_field_to_buffer();
-        
+
         self.editor_field = match self.editor_field {
             EditorField::Title => EditorField::Tags,
             EditorField::Description => EditorField::Title,
-            EditorField::Priority => EditorField::Description,
+            EditorField::DueDate => EditorField::Description,
+            EditorField::Priority => EditorField::DueDate,
             EditorField::List => EditorField::Priority,
             EditorField::Tags => EditorField::List,
             _ => EditorField::Title,
@@ -733,6 +779,9 @@ impl AppState {
             EditorField::Description => {
                 self.editor_description_buffer = self.input_buffer.clone();
             }
+            EditorField::DueDate => {
+                self.editor_due_date_buffer = self.input_buffer.clone();
+            }
             _ => {}
         }
     }
@@ -742,8 +791,20 @@ impl AppState {
         self.input_buffer = match self.editor_field {
             EditorField::Title => self.editor_title_buffer.clone(),
             EditorField::Description => self.editor_description_buffer.clone(),
+            EditorField::DueDate => self.editor_due_date_buffer.clone(),
             _ => String::new(),
         };
         self.cursor_pos = self.input_buffer.len();
+    }
+
+    /// Parse a due date string (YYYY-MM-DD format) into a DateTime
+    fn parse_due_date(s: &str) -> Option<chrono::DateTime<chrono::Utc>> {
+        if s.trim().is_empty() {
+            return None;
+        }
+        // Parse YYYY-MM-DD format
+        chrono::NaiveDate::parse_from_str(s.trim(), "%Y-%m-%d")
+            .ok()
+            .map(|date| date.and_hms_opt(23, 59, 59).unwrap().and_utc())
     }
 }

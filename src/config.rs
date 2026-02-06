@@ -71,10 +71,8 @@ impl Config {
     /// Load config from a specific path
     pub fn load_from(path: &PathBuf) -> Result<Self> {
         if path.exists() {
-            let content = std::fs::read_to_string(path)
-                .context("Failed to read config file")?;
-            toml::from_str(&content)
-                .context("Failed to parse config file")
+            let content = std::fs::read_to_string(path).context("Failed to read config file")?;
+            toml::from_str(&content).context("Failed to parse config file")
         } else {
             Ok(Self::default())
         }
@@ -90,14 +88,11 @@ impl Config {
     pub fn save_to(&self, path: &PathBuf) -> Result<()> {
         // Ensure parent directory exists
         if let Some(parent) = path.parent() {
-            std::fs::create_dir_all(parent)
-                .context("Failed to create config directory")?;
+            std::fs::create_dir_all(parent).context("Failed to create config directory")?;
         }
 
-        let content = toml::to_string_pretty(self)
-            .context("Failed to serialize config")?;
-        std::fs::write(path, content)
-            .context("Failed to write config file")?;
+        let content = toml::to_string_pretty(self).context("Failed to serialize config")?;
+        std::fs::write(path, content).context("Failed to write config file")?;
 
         Ok(())
     }

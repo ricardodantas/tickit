@@ -23,12 +23,10 @@ impl Database {
     pub fn open_path(path: &PathBuf) -> Result<Self> {
         // Ensure parent directory exists
         if let Some(parent) = path.parent() {
-            std::fs::create_dir_all(parent)
-                .context("Failed to create config directory")?;
+            std::fs::create_dir_all(parent).context("Failed to create config directory")?;
         }
 
-        let conn = Connection::open(path)
-            .context("Failed to open database")?;
+        let conn = Connection::open(path).context("Failed to open database")?;
 
         let db = Self { conn };
         db.init()?;
@@ -111,11 +109,11 @@ impl Database {
 
     /// Ensure the inbox list exists
     fn ensure_inbox(&self) -> Result<()> {
-        let count: i32 = self.conn.query_row(
-            "SELECT COUNT(*) FROM lists WHERE is_inbox = 1",
-            [],
-            |row| row.get(0),
-        )?;
+        let count: i32 =
+            self.conn
+                .query_row("SELECT COUNT(*) FROM lists WHERE is_inbox = 1", [], |row| {
+                    row.get(0)
+                })?;
 
         if count == 0 {
             let inbox = List::inbox();
@@ -198,7 +196,8 @@ impl Database {
                     .unwrap()
                     .with_timezone(&chrono::Utc),
             })
-        }).map_err(Into::into)
+        })
+        .map_err(Into::into)
     }
 
     /// Update a list
@@ -222,7 +221,7 @@ impl Database {
     /// Delete a list (moves tasks to inbox)
     pub fn delete_list(&self, list_id: Uuid) -> Result<()> {
         let inbox = self.get_inbox()?;
-        
+
         // Move tasks to inbox
         self.conn.execute(
             "UPDATE tasks SET list_id = ?1 WHERE list_id = ?2",
@@ -256,9 +255,9 @@ impl Database {
 
     /// Get all tags
     pub fn get_tags(&self) -> Result<Vec<Tag>> {
-        let mut stmt = self.conn.prepare(
-            "SELECT id, name, color, created_at FROM tags ORDER BY name"
-        )?;
+        let mut stmt = self
+            .conn
+            .prepare("SELECT id, name, color, created_at FROM tags ORDER BY name")?;
 
         let tags = stmt.query_map([], |row| {
             Ok(Tag {
@@ -346,7 +345,7 @@ impl Database {
         let mut sql = String::from(
             "SELECT DISTINCT t.id, t.title, t.description, t.url, t.priority, t.completed, 
              t.list_id, t.created_at, t.updated_at, t.completed_at, t.due_date
-             FROM tasks t"
+             FROM tasks t",
         );
 
         let mut conditions = Vec::new();
@@ -380,19 +379,20 @@ impl Database {
 
         let mut stmt = self.conn.prepare(&sql)?;
 
-        let params_refs: Vec<&dyn rusqlite::ToSql> = params_vec.iter().map(|p| p.as_ref()).collect();
+        let params_refs: Vec<&dyn rusqlite::ToSql> =
+            params_vec.iter().map(|p| p.as_ref()).collect();
 
         // First collect just the task IDs
-        let task_ids: Vec<String> = stmt.query_map(params_refs.as_slice(), |row| {
-            row.get(0)
-        })?.collect::<Result<Vec<_>, _>>()?;
+        let task_ids: Vec<String> = stmt
+            .query_map(params_refs.as_slice(), |row| row.get(0))?
+            .collect::<Result<Vec<_>, _>>()?;
 
         let mut result = Vec::new();
         for task_id in task_ids {
             // Get fresh row for this task
             let mut task_stmt = self.conn.prepare(
                 "SELECT id, title, description, url, priority, completed, list_id, 
-                 created_at, updated_at, completed_at, due_date FROM tasks WHERE id = ?1"
+                 created_at, updated_at, completed_at, due_date FROM tasks WHERE id = ?1",
             )?;
 
             let task = task_stmt.query_row(params![task_id], |row| {
@@ -419,10 +419,12 @@ impl Database {
                     updated_at: chrono::DateTime::parse_from_rfc3339(&row.get::<_, String>(8)?)
                         .unwrap()
                         .with_timezone(&chrono::Utc),
-                    completed_at: row.get::<_, Option<String>>(9)?
+                    completed_at: row
+                        .get::<_, Option<String>>(9)?
                         .and_then(|s| chrono::DateTime::parse_from_rfc3339(&s).ok())
                         .map(|dt| dt.with_timezone(&chrono::Utc)),
-                    due_date: row.get::<_, Option<String>>(10)?
+                    due_date: row
+                        .get::<_, Option<String>>(10)?
                         .and_then(|s| chrono::DateTime::parse_from_rfc3339(&s).ok())
                         .map(|dt| dt.with_timezone(&chrono::Utc)),
                 })
@@ -439,9 +441,9 @@ impl Database {
 
     /// Get tag IDs for a task
     fn get_task_tags(&self, task_id: Uuid) -> Result<Vec<Uuid>> {
-        let mut stmt = self.conn.prepare(
-            "SELECT tag_id FROM task_tags WHERE task_id = ?1"
-        )?;
+        let mut stmt = self
+            .conn
+            .prepare("SELECT tag_id FROM task_tags WHERE task_id = ?1")?;
 
         let tags = stmt.query_map(params![task_id.to_string()], |row| {
             Ok(Uuid::parse_str(&row.get::<_, String>(0)?).unwrap())
@@ -503,7 +505,8 @@ impl Database {
             "SELECT COUNT(*) FROM tasks WHERE list_id = ?1 AND completed = 0"
         };
 
-        self.conn.query_row(sql, params![list_id.to_string()], |row| row.get(0))
+        self.conn
+            .query_row(sql, params![list_id.to_string()], |row| row.get(0))
             .map_err(Into::into)
     }
 
@@ -515,7 +518,8 @@ impl Database {
             "SELECT COUNT(*) FROM tasks WHERE completed = 0"
         };
 
-        self.conn.query_row(sql, [], |row| row.get(0))
+        self.conn
+            .query_row(sql, [], |row| row.get(0))
             .map_err(Into::into)
     }
 }
