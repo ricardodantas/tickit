@@ -1,0 +1,502 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const baseUrl = import.meta.env.BASE_URL;
+---
+
+<Layout title="Documentation - Tickit" description="Complete documentation for Tickit terminal task manager. Learn CLI commands, TUI navigation, configuration, and more.">
+  <div class="docs-container">
+    <aside class="docs-sidebar">
+      <nav>
+        <h3>Getting Started</h3>
+        <ul>
+          <li><a href="#installation">Installation</a></li>
+          <li><a href="#quick-start">Quick Start</a></li>
+        </ul>
+        <h3>CLI</h3>
+        <ul>
+          <li><a href="#cli-add">Add Tasks</a></li>
+          <li><a href="#cli-list">List Tasks</a></li>
+          <li><a href="#cli-complete">Complete Tasks</a></li>
+          <li><a href="#cli-lists">Manage Lists</a></li>
+          <li><a href="#cli-tags">Manage Tags</a></li>
+          <li><a href="#cli-export">Export</a></li>
+        </ul>
+        <h3>TUI</h3>
+        <ul>
+          <li><a href="#tui-navigation">Navigation</a></li>
+          <li><a href="#tui-keybindings">Keybindings</a></li>
+          <li><a href="#tui-views">Views</a></li>
+        </ul>
+        <h3>Configuration</h3>
+        <ul>
+          <li><a href="#config-file">Config File</a></li>
+          <li><a href="#config-themes">Themes</a></li>
+        </ul>
+      </nav>
+    </aside>
+
+    <main class="docs-content">
+      <h1>Documentation</h1>
+
+      <section id="installation">
+        <h2>Installation</h2>
+        
+        <h3>Homebrew (macOS/Linux)</h3>
+        <pre><code>brew install ricardodantas/tap/tickit</code></pre>
+
+        <h3>Cargo</h3>
+        <pre><code>cargo install tickit</code></pre>
+
+        <h3>From Source</h3>
+        <pre><code>git clone https://github.com/ricardodantas/tickit
+cd tickit
+cargo build --release
+./target/release/tickit</code></pre>
+      </section>
+
+      <section id="quick-start">
+        <h2>Quick Start</h2>
+        <p>After installation, you can immediately start using Tickit:</p>
+        
+        <pre><code># Add your first task
+tickit add "Learn Tickit"
+
+# Launch the TUI
+tickit</code></pre>
+
+        <p>Use <code>j</code>/<code>k</code> to navigate, <code>Space</code> to toggle completion, and <code>?</code> for help.</p>
+      </section>
+
+      <section id="cli-add">
+        <h2>Add Tasks (CLI)</h2>
+        
+        <pre><code># Simple task
+tickit add "Buy groceries"
+
+# With description
+tickit add "Project meeting" -d "Discuss Q1 roadmap"
+
+# With priority (low, medium, high, urgent)
+tickit add "Fix bug" -p urgent
+
+# With due date
+tickit add "Submit report" --due 2026-02-15
+
+# With list
+tickit add "Call dentist" -l Personal
+
+# With tags
+tickit add "Review PR" -t work,urgent
+
+# With URL
+tickit add "Read article" -u "https://example.com/article"
+
+# Full example
+tickit add "Finish project" -d "Complete all tasks" -p high -l Work -t deadline --due 2026-02-20</code></pre>
+      </section>
+
+      <section id="cli-list">
+        <h2>List Tasks (CLI)</h2>
+        
+        <pre><code># List incomplete tasks
+tickit list
+
+# Include completed tasks
+tickit list --all
+
+# Filter by list
+tickit list -l Work
+
+# Filter by tag
+tickit list -t urgent
+
+# Output as JSON
+tickit list --json</code></pre>
+      </section>
+
+      <section id="cli-complete">
+        <h2>Complete Tasks (CLI)</h2>
+        
+        <pre><code># Complete a task by ID (use 'tickit list' to see IDs)
+tickit done &lt;task-id&gt;
+
+# Example
+tickit done abc12345</code></pre>
+      </section>
+
+      <section id="cli-lists">
+        <h2>Manage Lists (CLI)</h2>
+        
+        <pre><code># Show all lists
+tickit lists
+
+# Create a new list
+tickit lists add "Shopping" --icon "🛒"
+
+# Delete a list
+tickit lists delete &lt;list-id&gt;</code></pre>
+      </section>
+
+      <section id="cli-tags">
+        <h2>Manage Tags (CLI)</h2>
+        
+        <pre><code># Show all tags
+tickit tags
+
+# Create a new tag
+tickit tags add "urgent" --color "#ff5555"
+
+# Delete a tag
+tickit tags delete &lt;tag-id&gt;</code></pre>
+      </section>
+
+      <section id="cli-export">
+        <h2>Export (CLI)</h2>
+        
+        <pre><code># Export to JSON
+tickit export --format json > tasks.json
+
+# Export to Markdown
+tickit export --format markdown > tasks.md
+
+# Export to CSV
+tickit export --format csv > tasks.csv
+
+# Export to todo.txt format
+tickit export --format todotxt > todo.txt</code></pre>
+      </section>
+
+      <section id="tui-navigation">
+        <h2>TUI Navigation</h2>
+        <p>The TUI is organized into three main views:</p>
+        <ul>
+          <li><strong>Tasks (1)</strong> - Main task list with filtering by list</li>
+          <li><strong>Lists (2)</strong> - Manage your lists</li>
+          <li><strong>Tags (3)</strong> - Manage your tags</li>
+        </ul>
+        <p>Press the number keys to switch between views.</p>
+      </section>
+
+      <section id="tui-keybindings">
+        <h2>TUI Keybindings</h2>
+        
+        <h3>Navigation</h3>
+        <table>
+          <tr><td><kbd>j</kbd> / <kbd>↓</kbd></td><td>Move down</td></tr>
+          <tr><td><kbd>k</kbd> / <kbd>↑</kbd></td><td>Move up</td></tr>
+          <tr><td><kbd>g</kbd></td><td>Go to first item</td></tr>
+          <tr><td><kbd>G</kbd></td><td>Go to last item</td></tr>
+          <tr><td><kbd>Tab</kbd></td><td>Switch focus (sidebar/main)</td></tr>
+          <tr><td><kbd>1</kbd></td><td>Tasks view</td></tr>
+          <tr><td><kbd>2</kbd></td><td>Lists view</td></tr>
+          <tr><td><kbd>3</kbd></td><td>Tags view</td></tr>
+        </table>
+
+        <h3>Actions</h3>
+        <table>
+          <tr><td><kbd>n</kbd></td><td>New task/list/tag</td></tr>
+          <tr><td><kbd>e</kbd></td><td>Edit selected</td></tr>
+          <tr><td><kbd>d</kbd></td><td>Delete selected</td></tr>
+          <tr><td><kbd>Space</kbd></td><td>Toggle task completion</td></tr>
+          <tr><td><kbd>Enter</kbd></td><td>Select list in sidebar / Save in editor</td></tr>
+          <tr><td><kbd>o</kbd></td><td>Open task URL</td></tr>
+        </table>
+
+        <h3>UI Controls</h3>
+        <table>
+          <tr><td><kbd>t</kbd></td><td>Open theme picker</td></tr>
+          <tr><td><kbd>?</kbd></td><td>Show help</td></tr>
+          <tr><td><kbd>A</kbd></td><td>About dialog</td></tr>
+          <tr><td><kbd>c</kbd></td><td>Toggle showing completed tasks</td></tr>
+          <tr><td><kbd>q</kbd></td><td>Quit</td></tr>
+          <tr><td><kbd>Esc</kbd></td><td>Cancel / Close dialog</td></tr>
+        </table>
+
+        <h3>Task Editor</h3>
+        <table>
+          <tr><td><kbd>Tab</kbd></td><td>Next field</td></tr>
+          <tr><td><kbd>Shift+Tab</kbd></td><td>Previous field</td></tr>
+          <tr><td><kbd>Enter</kbd></td><td>Save task</td></tr>
+          <tr><td><kbd>Esc</kbd></td><td>Cancel</td></tr>
+        </table>
+      </section>
+
+      <section id="tui-views">
+        <h2>TUI Views</h2>
+        
+        <h3>Tasks View</h3>
+        <img src={`${baseUrl}screenshots/01-tasks.png`} alt="Tasks view" class="doc-screenshot" />
+        <p>The main view showing your tasks. Filter by selecting a list in the sidebar.</p>
+
+        <h3>Lists View</h3>
+        <img src={`${baseUrl}screenshots/02-lists.png`} alt="Lists view" class="doc-screenshot" />
+        <p>Manage your lists. The Inbox list is the default for new tasks.</p>
+
+        <h3>Tags View</h3>
+        <img src={`${baseUrl}screenshots/03-tags.png`} alt="Tags view" class="doc-screenshot" />
+        <p>Manage color-coded tags for flexible task categorization.</p>
+
+        <h3>Task Editor</h3>
+        <img src={`${baseUrl}screenshots/07-task-editor.png`} alt="Task editor" class="doc-screenshot" />
+        <p>Full-featured editor for creating and editing tasks with all fields.</p>
+      </section>
+
+      <section id="config-file">
+        <h2>Configuration</h2>
+        <p>Configuration file location: <code>~/.config/tickit/config.toml</code></p>
+        
+        <pre><code># Theme name (see themes page for options)
+theme = "dracula"
+
+# Show completed tasks by default
+show_completed = false</code></pre>
+
+        <p>Database location: <code>~/.config/tickit/tickit.sqlite</code></p>
+      </section>
+
+      <section id="config-themes">
+        <h2>Themes</h2>
+        <p>Tickit includes 15 beautiful built-in themes:</p>
+        <ul class="theme-list">
+          <li>Dracula</li>
+          <li>Nord</li>
+          <li>Tokyo Night</li>
+          <li>Catppuccin Mocha</li>
+          <li>Catppuccin Latte</li>
+          <li>Gruvbox Dark</li>
+          <li>Gruvbox Light</li>
+          <li>One Dark</li>
+          <li>Solarized Dark</li>
+          <li>Solarized Light</li>
+          <li>Rose Pine</li>
+          <li>Rose Pine Dawn</li>
+          <li>Everforest</li>
+          <li>Kanagawa</li>
+          <li>Monokai</li>
+        </ul>
+        <p>Press <kbd>t</kbd> in the TUI to open the theme picker.</p>
+        <a href={`${baseUrl}themes`} class="btn btn-secondary">Browse All Themes →</a>
+      </section>
+    </main>
+  </div>
+</Layout>
+
+<style>
+  .docs-container {
+    display: flex;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: calc(var(--nav-height) + 2rem) 1.5rem 4rem;
+    gap: 3rem;
+  }
+
+  .docs-sidebar {
+    width: 220px;
+    flex-shrink: 0;
+    position: sticky;
+    top: calc(var(--nav-height) + 2rem);
+    height: fit-content;
+    max-height: calc(100vh - var(--nav-height) - 4rem);
+    overflow-y: auto;
+  }
+
+  .docs-sidebar nav {
+    background: var(--bg-secondary);
+    padding: 1.5rem;
+    border-radius: 12px;
+    border: 1px solid var(--bg-tertiary);
+  }
+
+  .docs-sidebar h3 {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .docs-sidebar h3:first-child {
+    margin-top: 0;
+  }
+
+  .docs-sidebar ul {
+    list-style: none;
+  }
+
+  .docs-sidebar li {
+    margin: 0.5rem 0;
+  }
+
+  .docs-sidebar a {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+  }
+
+  .docs-sidebar a:hover {
+    color: var(--accent-green);
+  }
+
+  .docs-content {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .docs-content h1 {
+    font-size: 2.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .docs-content h2 {
+    font-size: 1.75rem;
+    margin-top: 3rem;
+    margin-bottom: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--bg-tertiary);
+    text-align: left;
+  }
+
+  .docs-content h2:first-of-type {
+    margin-top: 0;
+    border-top: none;
+    padding-top: 0;
+  }
+
+  .docs-content h3 {
+    font-size: 1.25rem;
+    margin-top: 2rem;
+    margin-bottom: 0.75rem;
+    color: var(--accent-green);
+  }
+
+  .docs-content p {
+    margin-bottom: 1rem;
+    line-height: 1.7;
+    color: var(--text-secondary);
+  }
+
+  .docs-content pre {
+    margin-bottom: 1.5rem;
+  }
+
+  .docs-content ul {
+    margin-bottom: 1rem;
+    padding-left: 1.5rem;
+  }
+
+  .docs-content li {
+    margin: 0.5rem 0;
+    color: var(--text-secondary);
+  }
+
+  .docs-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 1.5rem;
+  }
+
+  .docs-content td {
+    padding: 0.75rem;
+    border: 1px solid var(--bg-tertiary);
+  }
+
+  .docs-content td:first-child {
+    width: 150px;
+    background: var(--bg-secondary);
+  }
+
+  .docs-content kbd {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.5rem;
+    padding: 0.125rem 0.375rem;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    background: var(--bg-tertiary);
+    border-radius: 4px;
+    color: var(--text-primary);
+    border: 1px solid var(--text-secondary);
+  }
+
+  .doc-screenshot {
+    max-width: 100%;
+    border-radius: 8px;
+    border: 1px solid var(--bg-tertiary);
+    margin: 1rem 0;
+  }
+
+  .theme-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 0.5rem;
+    padding-left: 0;
+    list-style: none;
+  }
+
+  .theme-list li {
+    background: var(--bg-secondary);
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    border: 1px solid var(--bg-tertiary);
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+    text-decoration: none;
+    margin-top: 1rem;
+  }
+
+  .btn-secondary {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+  }
+
+  .btn-secondary:hover {
+    background: var(--accent-green);
+    color: var(--bg-primary);
+  }
+
+  @media (max-width: 900px) {
+    .docs-container {
+      flex-direction: column;
+      padding-top: calc(var(--nav-height) + 1rem);
+    }
+
+    .docs-sidebar {
+      width: 100%;
+      position: static;
+      max-height: none;
+    }
+
+    .docs-sidebar nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .docs-sidebar h3 {
+      width: 100%;
+      margin-top: 0.5rem;
+    }
+
+    .docs-sidebar ul {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem 1rem;
+    }
+
+    .docs-content td:first-child {
+      width: auto;
+    }
+  }
+</style>
+</Layout>

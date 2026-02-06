@@ -1,0 +1,916 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const baseUrl = import.meta.env.BASE_URL;
+---
+
+<Layout title="Tickit - Terminal Task Manager">
+  <section class="hero">
+    <div class="hero-content">
+      <h1>
+        <span class="logo-emoji">✅</span>
+        Tickit
+      </h1>
+      <p class="hero-tagline">
+        A beautiful terminal task manager<br />
+        <span class="highlight">for power users</span>
+      </p>
+      <p class="hero-description">
+        Manage tasks, lists, tags, and due dates with a gorgeous TUI —
+        or use the CLI for quick task management.
+      </p>
+
+      <div class="install-box">
+        <div class="install-tabs">
+          <button class="install-tab active" data-tab="homebrew">Homebrew</button>
+          <button class="install-tab" data-tab="cargo">Cargo</button>
+        </div>
+        <div class="install-commands">
+          <div class="install-command active" id="homebrew-cmd">
+            <code>brew install ricardodantas/tap/tickit</code>
+            <button class="copy-btn" data-copy="brew install ricardodantas/tap/tickit" aria-label="Copy to clipboard">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+              <span class="copy-text">Copy</span>
+            </button>
+          </div>
+          <div class="install-command" id="cargo-cmd">
+            <code>cargo install tickit</code>
+            <button class="copy-btn" data-copy="cargo install tickit" aria-label="Copy to clipboard">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+              <span class="copy-text">Copy</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="hero-buttons">
+        <a href={`${baseUrl}docs`} class="btn btn-primary">
+          Get Started
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M5 12h14M12 5l7 7-7 7"/>
+          </svg>
+        </a>
+        <a href="https://github.com/ricardodantas/tickit" target="_blank" rel="noopener" class="btn btn-secondary">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+            <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+          </svg>
+          View on GitHub
+        </a>
+      </div>
+    </div>
+
+    <div class="hero-demo">
+      <div class="demo-window">
+        <div class="demo-titlebar">
+          <span class="dot red"></span>
+          <span class="dot yellow"></span>
+          <span class="dot green"></span>
+          <span class="demo-title">tickit</span>
+        </div>
+        <div class="demo-content">
+          <img src={`${baseUrl}screenshots/01-tasks.png`} alt="Tickit TUI showing task list" loading="lazy" />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="features" id="features">
+    <div class="container">
+      <h2>Features</h2>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">📋</div>
+          <h3>Task Management</h3>
+          <p>Create, edit, and organize tasks with priorities (low, medium, high, urgent) and track completion status.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">📁</div>
+          <h3>Lists</h3>
+          <p>Organize tasks into custom lists with icons. Default Inbox list keeps unassigned tasks together.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">🏷️</div>
+          <h3>Tags</h3>
+          <p>Add color-coded tags to tasks for flexible categorization. Filter tasks by tags instantly.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">📅</div>
+          <h3>Due Dates</h3>
+          <p>Set due dates for tasks. Visual indicators show overdue (red), soon (yellow), and upcoming dates.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">🖥️</div>
+          <h3>Beautiful TUI</h3>
+          <p>Navigate with keyboard shortcuts through an intuitive terminal interface with 15 gorgeous themes.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">⌨️</div>
+          <h3>Powerful CLI</h3>
+          <p>Quick task management from the command line. Add tasks, list, complete, and export without entering the TUI.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">📤</div>
+          <h3>Export Formats</h3>
+          <p>Export your tasks to JSON, Markdown, CSV, or todo.txt format for backup or integration.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">🔗</div>
+          <h3>URL Attachments</h3>
+          <p>Attach URLs to tasks for quick reference. Open links directly from the TUI with a keystroke.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="examples">
+    <div class="container">
+      <h2>CLI Examples</h2>
+      <div class="examples-grid">
+        <div class="example-card">
+          <h3>➕ Add Tasks</h3>
+          <pre><code># Add a simple task
+tickit add "Buy groceries"
+
+# Add with priority and due date
+tickit add "Project deadline" -p high --due 2026-02-15
+
+# Add with tags and list
+tickit add "Review PR" -l Work -t urgent,code</code></pre>
+        </div>
+
+        <div class="example-card">
+          <h3>📋 List Tasks</h3>
+          <pre><code># List all incomplete tasks
+tickit list
+
+# List tasks in a specific list
+tickit list -l Work
+
+# Show all tasks including completed
+tickit list --all</code></pre>
+        </div>
+
+        <div class="example-card">
+          <h3>✅ Complete & Export</h3>
+          <pre><code># Complete a task
+tickit done &lt;task-id&gt;
+
+# Export to Markdown
+tickit export --format markdown &gt; tasks.md
+
+# Export to todo.txt format
+tickit export --format todotxt</code></pre>
+        </div>
+      </div>
+
+      <div class="examples-cta">
+        <a href={`${baseUrl}docs`} class="btn btn-primary">
+          See Full Documentation
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M5 12h14M12 5l7 7-7 7"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="themes-preview">
+    <div class="container">
+      <h2>15 Beautiful Themes</h2>
+      <p class="section-description">
+        Customize your experience with gorgeous color schemes including Dracula, Nord, Tokyo Night, and more.
+      </p>
+      <div class="themes-showcase">
+        <img src={`${baseUrl}screenshots/04-theme-picker.png`} alt="Theme picker showing available themes" class="theme-screenshot" loading="lazy" />
+      </div>
+      <div class="themes-cta">
+        <a href={`${baseUrl}themes`} class="btn btn-secondary">
+          Browse All Themes
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M5 12h14M12 5l7 7-7 7"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="quick-start">
+    <div class="container">
+      <h2>Quick Start</h2>
+      <div class="steps">
+        <div class="step">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <h3>Install</h3>
+            <div class="step-code">
+              <code>brew install ricardodantas/tap/tickit</code>
+              <button class="copy-btn small" data-copy="brew install ricardodantas/tap/tickit" aria-label="Copy">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+              </button>
+            </div>
+            <p class="step-alt">or <code>cargo install tickit</code></p>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <h3>Add Your First Task</h3>
+            <div class="step-code">
+              <code>tickit add "My first task"</code>
+              <button class="copy-btn small" data-copy="tickit add \"My first task\"" aria-label="Copy">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-number">3</div>
+          <div class="step-content">
+            <h3>Launch the TUI</h3>
+            <div class="step-code">
+              <code>tickit</code>
+              <button class="copy-btn small" data-copy="tickit" aria-label="Copy">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-number">4</div>
+          <div class="step-content">
+            <h3>Navigate & Manage</h3>
+            <p class="step-note">Use <code>j/k</code> to move, <code>n</code> to add tasks, <code>Space</code> to toggle complete, <code>?</code> for help</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="keybindings">
+    <div class="container">
+      <h2>Keyboard Shortcuts</h2>
+      <p class="section-description">
+        Navigate efficiently with vim-style keybindings.
+      </p>
+      <div class="keybindings-grid">
+        <div class="keybinding-group">
+          <h3>Navigation</h3>
+          <ul>
+            <li><kbd>j</kbd> / <kbd>↓</kbd> Move down</li>
+            <li><kbd>k</kbd> / <kbd>↑</kbd> Move up</li>
+            <li><kbd>1</kbd> Tasks view</li>
+            <li><kbd>2</kbd> Lists view</li>
+            <li><kbd>3</kbd> Tags view</li>
+          </ul>
+        </div>
+        <div class="keybinding-group">
+          <h3>Actions</h3>
+          <ul>
+            <li><kbd>n</kbd> New task/list/tag</li>
+            <li><kbd>e</kbd> Edit selected</li>
+            <li><kbd>d</kbd> Delete selected</li>
+            <li><kbd>Space</kbd> Toggle complete</li>
+            <li><kbd>o</kbd> Open URL</li>
+          </ul>
+        </div>
+        <div class="keybinding-group">
+          <h3>UI</h3>
+          <ul>
+            <li><kbd>t</kbd> Theme picker</li>
+            <li><kbd>?</kbd> Show help</li>
+            <li><kbd>A</kbd> About dialog</li>
+            <li><kbd>c</kbd> Toggle completed</li>
+            <li><kbd>q</kbd> Quit</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+</Layout>
+
+<style>
+  /* Hero Section */
+  .hero {
+    padding: calc(var(--nav-height) + 4rem) 1.5rem 4rem;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3rem;
+    background: linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+  }
+
+  .hero-content {
+    text-align: center;
+    max-width: 700px;
+  }
+
+  h1 {
+    font-size: clamp(3rem, 8vw, 5rem);
+    font-weight: 800;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+
+  .logo-emoji {
+    font-size: 0.8em;
+  }
+
+  .hero-tagline {
+    font-size: clamp(1.25rem, 3vw, 1.5rem);
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+    line-height: 1.4;
+  }
+
+  .highlight {
+    color: var(--accent-green);
+  }
+
+  .hero-description {
+    font-size: 1.125rem;
+    color: var(--text-secondary);
+    margin-bottom: 2rem;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .install-box {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: stretch;
+    background: var(--bg-secondary);
+    border: 1px solid var(--bg-tertiary);
+    border-radius: 8px;
+    margin-bottom: 2rem;
+    font-family: var(--font-mono);
+    min-width: 320px;
+  }
+
+  .install-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--bg-tertiary);
+  }
+
+  .install-tab {
+    flex: 1;
+    padding: 0.75rem 1rem;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-family: var(--font-sans);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .install-tab:first-child {
+    border-radius: 8px 0 0 0;
+  }
+
+  .install-tab:last-child {
+    border-radius: 0 8px 0 0;
+  }
+
+  .install-tab:hover {
+    color: var(--text-primary);
+    background: var(--bg-tertiary);
+  }
+
+  .install-tab.active {
+    color: var(--accent-green);
+    background: var(--bg-primary);
+    border-bottom: 2px solid var(--accent-green);
+    margin-bottom: -1px;
+  }
+
+  .install-commands {
+    padding: 0.75rem 1rem;
+  }
+
+  .install-command {
+    display: none;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .install-command.active {
+    display: flex;
+  }
+
+  .install-box code {
+    background: none;
+    padding: 0;
+    color: var(--accent-green);
+    font-size: 1rem;
+  }
+
+  .copy-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    background: var(--bg-tertiary);
+    border: none;
+    color: var(--text-secondary);
+    padding: 0.5rem 0.75rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: var(--font-sans);
+    font-size: 0.875rem;
+  }
+
+  .copy-btn:hover {
+    background: var(--accent-green);
+    color: var(--bg-primary);
+  }
+
+  .copy-btn.copied {
+    background: var(--accent-green);
+    color: var(--bg-primary);
+  }
+
+  .copy-btn.small {
+    padding: 0.25rem 0.5rem;
+  }
+
+  .copy-btn.small .copy-text {
+    display: none;
+  }
+
+  .hero-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1rem;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.875rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: all 0.2s;
+    text-decoration: none;
+  }
+
+  .btn-primary {
+    background: var(--accent-green);
+    color: var(--bg-primary);
+  }
+
+  .btn-primary:hover {
+    background: var(--accent-cyan);
+    color: var(--bg-primary);
+    transform: translateY(-2px);
+  }
+
+  .btn-secondary {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+  }
+
+  .btn-secondary:hover {
+    background: var(--text-secondary);
+    color: var(--bg-primary);
+    transform: translateY(-2px);
+  }
+
+  /* Demo Window */
+  .hero-demo {
+    width: 100%;
+    max-width: 900px;
+  }
+
+  .demo-window {
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    border: 1px solid var(--bg-tertiary);
+  }
+
+  .demo-titlebar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    background: var(--bg-tertiary);
+  }
+
+  .dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+  }
+
+  .dot.red { background: #ff5f56; }
+  .dot.yellow { background: #ffbd2e; }
+  .dot.green { background: #27c93f; }
+
+  .demo-title {
+    margin-left: auto;
+    margin-right: auto;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-family: var(--font-mono);
+  }
+
+  .demo-content img {
+    width: 100%;
+    display: block;
+  }
+
+  /* Features Section */
+  .features {
+    padding: 6rem 1.5rem;
+    background: var(--bg-secondary);
+  }
+
+  .container {
+    max-width: var(--max-width);
+    margin: 0 auto;
+  }
+
+  h2 {
+    font-size: clamp(2rem, 5vw, 2.5rem);
+    text-align: center;
+    margin-bottom: 1rem;
+  }
+
+  .section-description {
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 1.125rem;
+    max-width: 600px;
+    margin: 0 auto 3rem;
+  }
+
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-top: 3rem;
+  }
+
+  .feature-card {
+    background: var(--bg-primary);
+    padding: 2rem;
+    border-radius: 12px;
+    border: 1px solid var(--bg-tertiary);
+    transition: transform 0.2s, border-color 0.2s;
+  }
+
+  .feature-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--accent-green);
+  }
+
+  .feature-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .feature-card h3 {
+    font-size: 1.25rem;
+    margin-bottom: 0.75rem;
+    color: var(--text-primary);
+  }
+
+  .feature-card p {
+    color: var(--text-secondary);
+    line-height: 1.7;
+  }
+
+  /* Examples Section */
+  .examples {
+    padding: 6rem 1.5rem;
+  }
+
+  .examples-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-top: 3rem;
+  }
+
+  .example-card {
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--bg-tertiary);
+  }
+
+  .example-card h3 {
+    padding: 1rem 1.5rem;
+    background: var(--bg-tertiary);
+    font-size: 1rem;
+    border-bottom: 1px solid var(--bg-tertiary);
+  }
+
+  .example-card pre {
+    margin: 0;
+    border: none;
+    border-radius: 0;
+    font-size: 0.8125rem;
+  }
+
+  .examples-cta {
+    text-align: center;
+    margin-top: 3rem;
+  }
+
+  /* Themes Preview */
+  .themes-preview {
+    padding: 6rem 1.5rem;
+    background: var(--bg-secondary);
+  }
+
+  .themes-showcase {
+    margin-top: 3rem;
+    text-align: center;
+  }
+
+  .theme-screenshot {
+    max-width: 100%;
+    border-radius: 12px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    border: 1px solid var(--bg-tertiary);
+  }
+
+  .themes-cta {
+    text-align: center;
+    margin-top: 2rem;
+  }
+
+  /* Quick Start */
+  .quick-start {
+    padding: 6rem 1.5rem;
+  }
+
+  .steps {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    max-width: 500px;
+    margin: 3rem auto 0;
+  }
+
+  .step {
+    display: flex;
+    gap: 1.5rem;
+    align-items: flex-start;
+  }
+
+  .step-number {
+    width: 48px;
+    height: 48px;
+    background: var(--accent-green);
+    color: var(--bg-primary);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1.25rem;
+    flex-shrink: 0;
+  }
+
+  .step-content h3 {
+    font-size: 1.25rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .step-note {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+  }
+
+  .step-code {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--bg-secondary);
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--bg-tertiary);
+    font-family: var(--font-mono);
+  }
+
+  .step-code code {
+    background: none;
+    padding: 0;
+    color: var(--accent-green);
+  }
+
+  .step-alt {
+    margin-top: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+  }
+
+  .step-alt code {
+    font-size: 0.8125rem;
+    padding: 0.125rem 0.375rem;
+  }
+
+  /* Keybindings Section */
+  .keybindings {
+    padding: 6rem 1.5rem;
+    background: var(--bg-secondary);
+  }
+
+  .keybindings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 2rem;
+    margin-top: 3rem;
+  }
+
+  .keybinding-group {
+    background: var(--bg-primary);
+    padding: 1.5rem;
+    border-radius: 12px;
+    border: 1px solid var(--bg-tertiary);
+  }
+
+  .keybinding-group h3 {
+    font-size: 1.125rem;
+    margin-bottom: 1rem;
+    color: var(--accent-green);
+  }
+
+  .keybinding-group ul {
+    list-style: none;
+  }
+
+  .keybinding-group li {
+    padding: 0.5rem 0;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  kbd {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2rem;
+    padding: 0.25rem 0.5rem;
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    background: var(--bg-tertiary);
+    border-radius: 4px;
+    color: var(--text-primary);
+    border: 1px solid var(--text-secondary);
+  }
+
+  @media (max-width: 768px) {
+    .hero {
+      padding: calc(var(--nav-height) + 2rem) 1rem 2rem;
+      gap: 2rem;
+    }
+
+    .hero-content {
+      max-width: 100%;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      flex-wrap: wrap;
+    }
+
+    .hero-tagline {
+      font-size: 1.125rem;
+    }
+
+    .hero-description {
+      font-size: 1rem;
+    }
+
+    .install-box {
+      width: 100%;
+      max-width: 100%;
+      min-width: unset;
+    }
+
+    .install-command {
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .install-box code {
+      font-size: 0.875rem;
+      word-break: break-all;
+    }
+
+    .hero-buttons {
+      flex-direction: column;
+      width: 100%;
+      gap: 0.75rem;
+    }
+
+    .btn {
+      justify-content: center;
+      width: 100%;
+    }
+
+    .features, .examples, .themes-preview, .quick-start, .keybindings {
+      padding: 3rem 1rem;
+    }
+
+    .features-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .step {
+      flex-direction: column;
+      text-align: center;
+      align-items: center;
+    }
+
+    .step-code {
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .keybindings-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<script>
+  // Install tab switching
+  document.querySelectorAll('.install-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      const targetTab = tab.getAttribute('data-tab');
+
+      // Update tabs
+      document.querySelectorAll('.install-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+
+      // Update commands
+      document.querySelectorAll('.install-command').forEach(cmd => cmd.classList.remove('active'));
+      document.getElementById(`${targetTab}-cmd`)?.classList.add('active');
+    });
+  });
+
+  // Copy to clipboard functionality
+  document.querySelectorAll('.copy-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const text = btn.getAttribute('data-copy');
+      if (!text) return;
+
+      try {
+        await navigator.clipboard.writeText(text);
+        btn.classList.add('copied');
+        const textEl = btn.querySelector('.copy-text');
+        if (textEl) textEl.textContent = 'Copied!';
+
+        setTimeout(() => {
+          btn.classList.remove('copied');
+          if (textEl) textEl.textContent = 'Copy';
+        }, 2000);
+      } catch (err) {
+        console.error('Failed to copy:', err);
+      }
+    });
+  });
+</script>
+</Layout>

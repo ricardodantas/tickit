@@ -1,0 +1,24 @@
+# Tickit - Terminal Task Manager
+# https://tickit.ricardodantas.me
+
+User-agent: *
+Allow: /
+
+# Sitemaps
+Sitemap: https://tickit.ricardodantas.me/sitemap.xml
+
+# AI/LLM Crawlers
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: Amazonbot
+Allow: /

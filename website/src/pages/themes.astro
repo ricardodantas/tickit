@@ -1,0 +1,270 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const baseUrl = import.meta.env.BASE_URL;
+
+const themes = [
+  { name: 'Dracula', slug: 'dracula', bg: '#282a36', fg: '#f8f8f2', accent: '#bd93f9', secondary: '#ff79c6', success: '#50fa7b', warning: '#f1fa8c' },
+  { name: 'Nord', slug: 'nord', bg: '#2e3440', fg: '#eceff4', accent: '#88c0d0', secondary: '#81a1c1', success: '#a3be8c', warning: '#ebcb8b' },
+  { name: 'Tokyo Night', slug: 'tokyo-night', bg: '#1a1b26', fg: '#c0caf5', accent: '#7aa2f7', secondary: '#bb9af7', success: '#9ece6a', warning: '#e0af68' },
+  { name: 'Catppuccin Mocha', slug: 'catppuccin-mocha', bg: '#1e1e2e', fg: '#cdd6f4', accent: '#cba6f7', secondary: '#f5c2e7', success: '#a6e3a1', warning: '#f9e2af' },
+  { name: 'Catppuccin Latte', slug: 'catppuccin-latte', bg: '#eff1f5', fg: '#4c4f69', accent: '#8839ef', secondary: '#ea76cb', success: '#40a02b', warning: '#df8e1d' },
+  { name: 'Gruvbox Dark', slug: 'gruvbox-dark', bg: '#282828', fg: '#ebdbb2', accent: '#fabd2f', secondary: '#d3869b', success: '#b8bb26', warning: '#fe8019' },
+  { name: 'Gruvbox Light', slug: 'gruvbox-light', bg: '#fbf1c7', fg: '#3c3836', accent: '#d79921', secondary: '#b16286', success: '#79740e', warning: '#d65d0e' },
+  { name: 'One Dark', slug: 'one-dark', bg: '#282c34', fg: '#abb2bf', accent: '#61afef', secondary: '#c678dd', success: '#98c379', warning: '#e5c07b' },
+  { name: 'Solarized Dark', slug: 'solarized-dark', bg: '#002b36', fg: '#839496', accent: '#268bd2', secondary: '#d33682', success: '#859900', warning: '#b58900' },
+  { name: 'Solarized Light', slug: 'solarized-light', bg: '#fdf6e3', fg: '#657b83', accent: '#268bd2', secondary: '#d33682', success: '#859900', warning: '#b58900' },
+  { name: 'Rose Pine', slug: 'rose-pine', bg: '#191724', fg: '#e0def4', accent: '#c4a7e7', secondary: '#ebbcba', success: '#9ccfd8', warning: '#f6c177' },
+  { name: 'Rose Pine Dawn', slug: 'rose-pine-dawn', bg: '#faf4ed', fg: '#575279', accent: '#907aa9', secondary: '#d7827e', success: '#56949f', warning: '#ea9d34' },
+  { name: 'Everforest', slug: 'everforest', bg: '#2d353b', fg: '#d3c6aa', accent: '#a7c080', secondary: '#e67e80', success: '#83c092', warning: '#dbbc7f' },
+  { name: 'Kanagawa', slug: '#kanagawa', bg: '#1f1f28', fg: '#dcd7ba', accent: '#7e9cd8', secondary: '#957fb8', success: '#98bb6c', warning: '#e6c384' },
+  { name: 'Monokai', slug: 'monokai', bg: '#272822', fg: '#f8f8f2', accent: '#66d9ef', secondary: '#ae81ff', success: '#a6e22e', warning: '#fd971f' },
+];
+---
+
+<Layout title="Themes - Tickit" description="Browse all 15 beautiful themes available in Tickit terminal task manager.">
+  <div class="themes-container">
+    <h1>Themes</h1>
+    <p class="intro">Tickit includes 15 carefully crafted color themes. Press <kbd>t</kbd> in the TUI to switch themes.</p>
+
+    <div class="theme-picker-preview">
+      <img src={`${baseUrl}screenshots/04-theme-picker.png`} alt="Theme picker in Tickit" />
+    </div>
+
+    <h2>Available Themes</h2>
+    <div class="themes-grid">
+      {themes.map(theme => (
+        <div class="theme-card" style={`--theme-bg: ${theme.bg}; --theme-fg: ${theme.fg}; --theme-accent: ${theme.accent};`}>
+          <div class="theme-preview" style={`background: ${theme.bg};`}>
+            <div class="preview-header">
+              <span class="preview-dot" style="background: #ff5f56;"></span>
+              <span class="preview-dot" style="background: #ffbd2e;"></span>
+              <span class="preview-dot" style="background: #27c93f;"></span>
+            </div>
+            <div class="preview-content">
+              <div class="preview-line" style={`background: ${theme.fg}; opacity: 0.8;`}></div>
+              <div class="preview-line short" style={`background: ${theme.accent};`}></div>
+              <div class="preview-line" style={`background: ${theme.fg}; opacity: 0.5;`}></div>
+              <div class="preview-colors">
+                <span style={`background: ${theme.accent};`}></span>
+                <span style={`background: ${theme.secondary};`}></span>
+                <span style={`background: ${theme.success};`}></span>
+                <span style={`background: ${theme.warning};`}></span>
+              </div>
+            </div>
+          </div>
+          <div class="theme-info">
+            <h3>{theme.name}</h3>
+            <code>{theme.slug}</code>
+          </div>
+        </div>
+      ))}
+    </div>
+
+    <section class="usage">
+      <h2>Using Themes</h2>
+      
+      <h3>In the TUI</h3>
+      <p>Press <kbd>t</kbd> to open the theme picker, use <kbd>j</kbd>/<kbd>k</kbd> to navigate, and <kbd>Enter</kbd> to apply.</p>
+
+      <h3>In Config</h3>
+      <p>Set your preferred theme in <code>~/.config/tickit/config.toml</code>:</p>
+      <pre><code>theme = "dracula"</code></pre>
+    </section>
+  </div>
+</Layout>
+
+<style>
+  .themes-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: calc(var(--nav-height) + 3rem) 1.5rem 4rem;
+  }
+
+  h1 {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    text-align: center;
+  }
+
+  .intro {
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 1.125rem;
+    max-width: 600px;
+    margin: 0 auto 2rem;
+  }
+
+  .intro kbd {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.5rem;
+    padding: 0.125rem 0.5rem;
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    background: var(--bg-tertiary);
+    border-radius: 4px;
+    color: var(--text-primary);
+    border: 1px solid var(--text-secondary);
+  }
+
+  .theme-picker-preview {
+    text-align: center;
+    margin-bottom: 3rem;
+  }
+
+  .theme-picker-preview img {
+    max-width: 100%;
+    border-radius: 12px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    border: 1px solid var(--bg-tertiary);
+  }
+
+  h2 {
+    font-size: 1.75rem;
+    margin-bottom: 2rem;
+    text-align: center;
+  }
+
+  .themes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 4rem;
+  }
+
+  .theme-card {
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--bg-tertiary);
+    transition: transform 0.2s, border-color 0.2s;
+  }
+
+  .theme-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--theme-accent, var(--accent-green));
+  }
+
+  .theme-preview {
+    padding: 1rem;
+    min-height: 120px;
+  }
+
+  .preview-header {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 1rem;
+  }
+
+  .preview-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+  }
+
+  .preview-content {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .preview-line {
+    height: 8px;
+    border-radius: 4px;
+    width: 80%;
+  }
+
+  .preview-line.short {
+    width: 50%;
+  }
+
+  .preview-colors {
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .preview-colors span {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+  }
+
+  .theme-info {
+    padding: 1rem;
+    background: var(--bg-primary);
+    border-top: 1px solid var(--bg-tertiary);
+  }
+
+  .theme-info h3 {
+    font-size: 1rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .theme-info code {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    background: var(--bg-tertiary);
+    padding: 0.125rem 0.375rem;
+    border-radius: 4px;
+  }
+
+  .usage {
+    max-width: 700px;
+    margin: 0 auto;
+    padding-top: 2rem;
+    border-top: 1px solid var(--bg-tertiary);
+  }
+
+  .usage h2 {
+    text-align: left;
+    margin-bottom: 1.5rem;
+  }
+
+  .usage h3 {
+    font-size: 1.125rem;
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+    color: var(--accent-green);
+  }
+
+  .usage p {
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+  }
+
+  .usage kbd {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.25rem;
+    padding: 0.125rem 0.375rem;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    background: var(--bg-tertiary);
+    border-radius: 4px;
+    color: var(--text-primary);
+    border: 1px solid var(--text-secondary);
+  }
+
+  .usage pre {
+    margin-top: 0.5rem;
+  }
+
+  @media (max-width: 768px) {
+    .themes-container {
+      padding-top: calc(var(--nav-height) + 2rem);
+    }
+
+    h1 {
+      font-size: 2rem;
+    }
+
+    .themes-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+</Layout>

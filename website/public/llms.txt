@@ -1,0 +1,138 @@
+# Tickit
+
+> A beautiful terminal task manager with CLI and TUI
+
+Tickit is a Rust-based task manager designed for terminal power users. It features both a command-line interface for quick task management and a gorgeous terminal user interface (TUI) for interactive task organization.
+
+## Quick Start
+
+Install via Homebrew:
+```
+brew install ricardodantas/tap/tickit
+```
+
+Or via Cargo:
+```
+cargo install tickit
+```
+
+## Basic Usage
+
+### CLI Commands
+
+```bash
+# Add a task
+tickit add "Buy groceries"
+
+# Add with priority and due date
+tickit add "Project deadline" -p high --due 2026-02-15
+
+# Add with tags and list
+tickit add "Review PR" -l Work -t urgent,code
+
+# List tasks
+tickit list
+
+# List tasks in a specific list
+tickit list -l Work
+
+# Complete a task
+tickit done <task-id>
+
+# Launch the TUI
+tickit
+```
+
+### TUI Keybindings
+
+Navigation:
+- `j` / `↓` - Move down
+- `k` / `↑` - Move up
+- `1` - Tasks view
+- `2` - Lists view
+- `3` - Tags view
+
+Actions:
+- `n` - New task/list/tag
+- `e` - Edit selected
+- `d` - Delete selected
+- `Space` - Toggle complete
+- `o` - Open URL
+
+UI:
+- `t` - Theme picker
+- `?` - Show help
+- `A` - About dialog
+- `c` - Toggle showing completed tasks
+- `q` - Quit
+
+## Features
+
+### Tasks
+- Create tasks with titles and optional descriptions
+- Set priorities: Low, Medium, High, Urgent
+- Attach URLs to tasks
+- Set due dates with visual indicators (overdue, soon, upcoming)
+
+### Lists
+- Organize tasks into custom lists
+- Each list has a customizable icon
+- Default Inbox list for unassigned tasks
+- Quick filtering by list
+
+### Tags
+- Color-coded tags for flexible categorization
+- Multiple tags per task
+- Filter tasks by tag
+- Create tags inline while editing tasks
+
+### Due Dates
+- Set due dates in YYYY-MM-DD format
+- Visual indicators:
+  - Red: Overdue
+  - Yellow: Due within 2 days
+  - Gray: Future dates
+- CLI support: `--due 2026-02-15`
+
+### Export
+- JSON: Full structured export
+- Markdown: Human-readable format
+- CSV: Spreadsheet compatible
+- todo.txt: Standard todo.txt format
+
+### Themes
+15 built-in themes including:
+- Dracula
+- Nord
+- Tokyo Night
+- Catppuccin Mocha/Latte
+- Gruvbox Dark/Light
+- One Dark
+- Solarized Dark/Light
+- And more...
+
+## Configuration
+
+Config file location: `~/.config/tickit/config.toml`
+
+```toml
+theme = "dracula"
+show_completed = false
+```
+
+Database location: `~/.config/tickit/tickit.sqlite`
+
+## Links
+
+- Website: https://tickit.ricardodantas.me
+- GitHub: https://github.com/ricardodantas/tickit
+- Issues: https://github.com/ricardodantas/tickit/issues
+- Crates.io: https://crates.io/crates/tickit
+
+## License
+
+MIT License - https://opensource.org/licenses/MIT
+
+## Author
+
+Ricardo Dantas - https://github.com/ricardodantas
