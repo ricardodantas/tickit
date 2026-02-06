@@ -160,6 +160,8 @@ pub struct AppState {
     pub editor_new_tag_buffer: String,
     /// Title buffer for new tasks (preserved when switching fields)
     pub editor_title_buffer: String,
+    /// Description buffer for tasks
+    pub editor_description_buffer: String,
 
     // UI state
     /// Show completed tasks
@@ -221,6 +223,7 @@ impl AppState {
             editor_adding_tag: false,
             editor_new_tag_buffer: String::new(),
             editor_title_buffer: String::new(),
+            editor_description_buffer: String::new(),
             show_completed,
             confirm_message: String::new(),
             confirm_action: None,
@@ -332,6 +335,7 @@ impl AppState {
         self.editor_adding_tag = false;
         self.editor_new_tag_buffer.clear();
         self.editor_title_buffer.clear();
+        self.editor_description_buffer.clear();
 
         // Set editor list to current selected list or inbox
         if let Some(list_id) = self.selected_list_id {
@@ -356,6 +360,8 @@ impl AppState {
             self.editor_tag_cursor = 0;
             self.editor_adding_tag = false;
             self.editor_new_tag_buffer.clear();
+            self.editor_title_buffer = task.title.clone();
+            self.editor_description_buffer = task.description.clone().unwrap_or_default();
             self.editing_task = Some(task);
         }
     }
@@ -373,9 +379,29 @@ impl AppState {
             .filter_map(|&i| self.tags.get(i).map(|t| t.id))
             .collect();
 
+        // Get title from the appropriate source
+        let title = if self.editor_field == EditorField::Title {
+            self.input_buffer.clone()
+        } else {
+            self.editor_title_buffer.clone()
+        };
+        
+        // Get description from the appropriate source
+        let description = if self.editor_field == EditorField::Description {
+            if self.input_buffer.is_empty() { None } else { Some(self.input_buffer.clone()) }
+        } else {
+            if self.editor_description_buffer.is_empty() { None } else { Some(self.editor_description_buffer.clone()) }
+        };
+
+        if title.is_empty() {
+            self.set_status("Task title cannot be empty");
+            return Ok(());
+        }
+
         if let Some(mut task) = self.editing_task.take() {
             // Update existing task
-            task.title = self.input_buffer.clone();
+            task.title = title;
+            task.description = description;
             task.priority = self.editor_priority;
             task.list_id = list_id;
             task.tag_ids = tag_ids;
@@ -383,18 +409,9 @@ impl AppState {
             self.db.update_task(&task)?;
             self.set_status("Task updated");
         } else {
-            // Create new task - use title buffer
-            let title = if self.editor_field == EditorField::Title {
-                self.input_buffer.clone()
-            } else {
-                self.editor_title_buffer.clone()
-            };
-            
-            if title.is_empty() {
-                self.set_status("Task title cannot be empty");
-                return Ok(());
-            }
+            // Create new task
             let mut task = Task::new(&title, list_id);
+            task.description = description;
             task.priority = self.editor_priority;
             task.tag_ids = tag_ids;
             self.db.insert_task(&task)?;
@@ -654,7 +671,8 @@ impl AppState {
         self.save_current_field_to_buffer();
         
         self.editor_field = match self.editor_field {
-            EditorField::Title => EditorField::Priority,
+            EditorField::Title => EditorField::Description,
+            EditorField::Description => EditorField::Priority,
             EditorField::Priority => EditorField::List,
             EditorField::List => EditorField::Tags,
             EditorField::Tags => EditorField::Title,
@@ -669,7 +687,8 @@ impl AppState {
         
         self.editor_field = match self.editor_field {
             EditorField::Title => EditorField::Tags,
-            EditorField::Priority => EditorField::Title,
+            EditorField::Description => EditorField::Title,
+            EditorField::Priority => EditorField::Description,
             EditorField::List => EditorField::Priority,
             EditorField::Tags => EditorField::List,
             _ => EditorField::Title,
@@ -678,28 +697,25 @@ impl AppState {
     }
 
     fn save_current_field_to_buffer(&mut self) {
-        // For new tasks, save title to dedicated buffer
-        if self.editing_task.is_none() && self.editor_field == EditorField::Title {
-            self.editor_title_buffer = self.input_buffer.clone();
+        // Save current field to dedicated buffer
+        match self.editor_field {
+            EditorField::Title => {
+                self.editor_title_buffer = self.input_buffer.clone();
+            }
+            EditorField::Description => {
+                self.editor_description_buffer = self.input_buffer.clone();
+            }
+            _ => {}
         }
     }
 
     fn update_input_buffer_for_field(&mut self) {
-        if let Some(task) = &self.editing_task {
-            // Editing existing task - load from task
-            self.input_buffer = match self.editor_field {
-                EditorField::Title => task.title.clone(),
-                EditorField::Description => task.description.clone().unwrap_or_default(),
-                EditorField::Url => task.url.clone().unwrap_or_default(),
-                _ => String::new(),
-            };
-        } else {
-            // Adding new task - use title buffer
-            self.input_buffer = match self.editor_field {
-                EditorField::Title => self.editor_title_buffer.clone(),
-                _ => String::new(),
-            };
-        }
+        // Load the appropriate buffer for the current field
+        self.input_buffer = match self.editor_field {
+            EditorField::Title => self.editor_title_buffer.clone(),
+            EditorField::Description => self.editor_description_buffer.clone(),
+            _ => String::new(),
+        };
         self.cursor_pos = self.input_buffer.len();
     }
 }

@@ -537,7 +537,7 @@ fn render_confirm_dialog(frame: &mut Frame, state: &AppState) {
 /// Render task editor
 fn render_task_editor(frame: &mut Frame, state: &AppState) {
     let colors = state.theme.colors();
-    let area = centered_rect(60, 60, frame.area());
+    let area = centered_rect(60, 70, frame.area());
 
     frame.render_widget(Clear, area);
 
@@ -552,6 +552,7 @@ fn render_task_editor(frame: &mut Frame, state: &AppState) {
         .margin(1)
         .constraints([
             Constraint::Length(3), // Title input
+            Constraint::Length(3), // Description input
             Constraint::Length(3), // Priority
             Constraint::Length(3), // List
             Constraint::Min(6),    // Tags (expanded)
@@ -570,11 +571,7 @@ fn render_task_editor(frame: &mut Frame, state: &AppState) {
     // Show the correct title value depending on focus
     let title_display = if title_focused {
         state.input_buffer.as_str()
-    } else if state.editing_task.is_some() {
-        // Editing existing task - show from task
-        state.editing_task.as_ref().map(|t| t.title.as_str()).unwrap_or("")
     } else {
-        // New task - show from title buffer
         state.editor_title_buffer.as_str()
     };
     
@@ -591,6 +588,34 @@ fn render_task_editor(frame: &mut Frame, state: &AppState) {
         frame.set_cursor_position((
             chunks[0].x + state.cursor_pos as u16 + 1,
             chunks[0].y + 1,
+        ));
+    }
+
+    // Description field
+    let desc_focused = state.editor_field == EditorField::Description;
+    let desc_style = if desc_focused {
+        colors.block_focus()
+    } else {
+        colors.block()
+    };
+    let desc_display = if desc_focused {
+        state.input_buffer.as_str()
+    } else {
+        state.editor_description_buffer.as_str()
+    };
+    let desc_input = Paragraph::new(desc_display)
+        .block(
+            Block::default()
+                .title(" Description (optional) ")
+                .borders(Borders::ALL)
+                .border_style(desc_style),
+        );
+    frame.render_widget(desc_input, chunks[1]);
+    
+    if desc_focused && !state.editor_adding_tag {
+        frame.set_cursor_position((
+            chunks[1].x + state.cursor_pos as u16 + 1,
+            chunks[1].y + 1,
         ));
     }
 
@@ -613,7 +638,7 @@ fn render_task_editor(frame: &mut Frame, state: &AppState) {
                 .borders(Borders::ALL)
                 .border_style(priority_style),
         );
-    frame.render_widget(priority_input, chunks[1]);
+    frame.render_widget(priority_input, chunks[2]);
 
     // List field
     let list_focused = state.editor_field == EditorField::List;
@@ -633,7 +658,7 @@ fn render_task_editor(frame: &mut Frame, state: &AppState) {
                 .borders(Borders::ALL)
                 .border_style(list_style),
         );
-    frame.render_widget(list_input, chunks[2]);
+    frame.render_widget(list_input, chunks[3]);
 
     // Tags field - show as selectable list
     let tags_focused = state.editor_field == EditorField::Tags;
@@ -697,7 +722,7 @@ fn render_task_editor(frame: &mut Frame, state: &AppState) {
                 .borders(Borders::ALL)
                 .border_style(tags_style),
         );
-    frame.render_widget(tags_list, chunks[3]);
+    frame.render_widget(tags_list, chunks[4]);
 
     // Help text
     let help_text = if state.editor_adding_tag {
@@ -708,7 +733,7 @@ fn render_task_editor(frame: &mut Frame, state: &AppState) {
     let help = Paragraph::new(help_text)
         .style(colors.text_muted())
         .alignment(Alignment::Center);
-    frame.render_widget(help, chunks[4]);
+    frame.render_widget(help, chunks[5]);
 
     // Outer block
     let outer = Block::default()

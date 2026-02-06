@@ -310,6 +310,9 @@ fn handle_task_editor(state: &mut AppState, key: KeyEvent) {
         return;
     }
 
+    // Check if we're in a text input field
+    let is_text_field = matches!(state.editor_field, EditorField::Title | EditorField::Description);
+
     match key.code {
         KeyCode::Esc => {
             state.mode = Mode::Normal;
@@ -326,36 +329,36 @@ fn handle_task_editor(state: &mut AppState, key: KeyEvent) {
         KeyCode::Tab => state.next_editor_field(),
         KeyCode::BackTab => state.prev_editor_field(),
 
-        // Text input for title field
-        KeyCode::Char(c) if state.editor_field == EditorField::Title => {
+        // Text input for title and description fields
+        KeyCode::Char(c) if is_text_field => {
             state.input_buffer.insert(state.cursor_pos, c);
             state.cursor_pos += 1;
         }
-        KeyCode::Backspace if state.editor_field == EditorField::Title => {
+        KeyCode::Backspace if is_text_field => {
             if state.cursor_pos > 0 {
                 state.cursor_pos -= 1;
                 state.input_buffer.remove(state.cursor_pos);
             }
         }
-        KeyCode::Delete if state.editor_field == EditorField::Title => {
+        KeyCode::Delete if is_text_field => {
             if state.cursor_pos < state.input_buffer.len() {
                 state.input_buffer.remove(state.cursor_pos);
             }
         }
-        KeyCode::Left if state.editor_field == EditorField::Title => {
+        KeyCode::Left if is_text_field => {
             if state.cursor_pos > 0 {
                 state.cursor_pos -= 1;
             }
         }
-        KeyCode::Right if state.editor_field == EditorField::Title => {
+        KeyCode::Right if is_text_field => {
             if state.cursor_pos < state.input_buffer.len() {
                 state.cursor_pos += 1;
             }
         }
-        KeyCode::Home if state.editor_field == EditorField::Title => {
+        KeyCode::Home if is_text_field => {
             state.cursor_pos = 0;
         }
-        KeyCode::End if state.editor_field == EditorField::Title => {
+        KeyCode::End if is_text_field => {
             state.cursor_pos = state.input_buffer.len();
         }
 
