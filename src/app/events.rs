@@ -109,6 +109,18 @@ pub fn handle_key(state: &mut AppState, key: KeyEvent) {
             state.mode = Mode::ThemePicker;
             return;
         }
+        // Manual sync (Ctrl+S)
+        (KeyModifiers::CONTROL, KeyCode::Char('s')) => {
+            if state.is_sync_enabled() {
+                state.set_syncing(true);
+                state.set_status("Syncing...");
+                // Actual sync is triggered in main loop via sync_requested flag
+                // We'll set a flag here and handle it in the main app
+            } else {
+                state.set_status("Sync not configured");
+            }
+            return;
+        }
         // About dialog (A like Hazelnut)
         (_, KeyCode::Char('A')) => {
             state.mode = Mode::About;

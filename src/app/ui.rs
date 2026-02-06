@@ -387,7 +387,7 @@ fn render_tags_view(frame: &mut Frame, state: &AppState, area: Rect) {
 fn render_status_bar(frame: &mut Frame, state: &AppState, area: Rect) {
     let colors = state.theme.colors();
 
-    let content = if let Some(msg) = &state.status_message {
+    let mut content = if let Some(msg) = &state.status_message {
         vec![
             Span::styled(" ", Style::default()),
             Span::styled(msg, colors.text_secondary()),
@@ -421,6 +421,36 @@ fn render_status_bar(frame: &mut Frame, state: &AppState, area: Rect) {
             Span::styled(": quit", colors.text_muted()),
         ]
     };
+
+    // Add sync indicator on the right side if sync is enabled
+    if state.is_sync_enabled() {
+        let sync_indicator = if state.sync_status.syncing {
+            vec![
+                Span::styled("  ", Style::default()),
+                Span::styled("↻ Syncing...", Style::default().fg(Color::Cyan)),
+            ]
+        } else if let Some(ref error) = state.sync_status.last_error {
+            vec![
+                Span::styled("  ", Style::default()),
+                Span::styled(
+                    format!("⚠ Sync: {}", error),
+                    Style::default().fg(Color::Red),
+                ),
+            ]
+        } else if state.sync_status.last_sync.is_some() {
+            vec![
+                Span::styled("  ", Style::default()),
+                Span::styled("☁ Synced", Style::default().fg(Color::Green)),
+            ]
+        } else {
+            vec![
+                Span::styled("  ", Style::default()),
+                Span::styled("Ctrl+S", colors.key_hint()),
+                Span::styled(": sync", colors.text_muted()),
+            ]
+        };
+        content.extend(sync_indicator);
+    }
 
     let status =
         Paragraph::new(Line::from(content)).style(Style::default().bg(colors.bg_secondary));
@@ -524,6 +554,10 @@ fn render_help_popup(frame: &mut Frame, state: &AppState) {
         Line::from(vec![
             Span::styled("  ?                  ", colors.key_hint()),
             Span::styled("Toggle this help", colors.text()),
+        ]),
+        Line::from(vec![
+            Span::styled("  Ctrl+s             ", colors.key_hint()),
+            Span::styled("Sync with server (if configured)", colors.text()),
         ]),
         Line::from(vec![
             Span::styled("  q / Ctrl+c         ", colors.key_hint()),

@@ -6,6 +6,7 @@ use uuid::Uuid;
 use crate::config::Config;
 use crate::db::Database;
 use crate::models::{List, Priority, Tag, Task};
+use crate::sync::SyncStatus;
 use crate::theme::Theme;
 
 /// Input mode for the application
@@ -190,6 +191,10 @@ pub struct AppState {
     pub pending_update: bool,
     /// Update result message
     pub update_result: Option<String>,
+
+    // Sync state
+    /// Sync status for UI display
+    pub sync_status: SyncStatus,
 }
 
 /// Actions that need confirmation
@@ -247,6 +252,7 @@ impl AppState {
             update_available: None,
             pending_update: false,
             update_result: None,
+            sync_status: SyncStatus::default(),
         };
 
         state.refresh_data()?;
@@ -833,5 +839,37 @@ impl AppState {
     /// Dismiss the update notification
     pub fn dismiss_update(&mut self) {
         self.update_available = None;
+    }
+
+    // ==================== Sync ====================
+
+    /// Check if sync is enabled and configured
+    pub fn is_sync_enabled(&self) -> bool {
+        self.config.sync.enabled
+            && self.config.sync.server.is_some()
+            && self.config.sync.token.is_some()
+    }
+
+    /// Update sync status
+    pub fn set_sync_status(&mut self, status: SyncStatus) {
+        self.sync_status = status;
+    }
+
+    /// Mark sync as in progress
+    pub fn set_syncing(&mut self, syncing: bool) {
+        self.sync_status.syncing = syncing;
+    }
+
+    /// Set sync error
+    pub fn set_sync_error(&mut self, error: Option<String>) {
+        self.sync_status.last_error = error;
+        self.sync_status.syncing = false;
+    }
+
+    /// Set last sync time
+    pub fn set_last_sync(&mut self, time: chrono::DateTime<chrono::Utc>) {
+        self.sync_status.last_sync = Some(time);
+        self.sync_status.last_error = None;
+        self.sync_status.syncing = false;
     }
 }
