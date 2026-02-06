@@ -394,7 +394,7 @@ fn handle_task_editor(state: &mut AppState, key: KeyEvent) {
     // Check if we're in a text input field
     let is_text_field = matches!(
         state.editor_field,
-        EditorField::Title | EditorField::Description
+        EditorField::Title | EditorField::Description | EditorField::DueDate
     );
 
     match key.code {
