@@ -7,7 +7,7 @@
 </h1>
 
 <p align="center">
-  <strong>A stunning terminal-based task manager inspired by <a href="https://www.reederapp.com/">Reeder</a></strong>
+  <strong>A stunning terminal-based task manager</strong>
 </p>
 
 <p align="center">
