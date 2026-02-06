@@ -11,7 +11,8 @@ use ratatui::{
 use super::state::{AppState, EditorField, Focus, Mode, View};
 use crate::theme::Theme;
 
-/// ASCII art logo for Tickit
+/// ASCII art logo for Tickit (used in help screen)
+#[allow(dead_code)]
 const LOGO: &str = r#"
 ████████╗██╗ ██████╗██╗  ██╗██╗████████╗
 ╚══██╔══╝██║██╔════╝██║ ██╔╝██║╚══██╔══╝
