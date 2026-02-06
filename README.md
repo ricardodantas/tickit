@@ -462,7 +462,7 @@ Tickit can sync your tasks across multiple devices using a self-hosted sync serv
 
 ### Setting Up Sync
 
-1. **Deploy tickit-sync server** (see [tickit-sync/README.md](tickit-sync/README.md))
+1. **Deploy tickit-sync server** — see [github.com/ricardodantas/tickit-sync](https://github.com/ricardodantas/tickit-sync)
 
 2. **Generate an API token:**
    ```bash
