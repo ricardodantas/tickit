@@ -182,6 +182,14 @@ pub struct AppState {
     pub tick: usize,
     /// Show help overlay
     pub show_help: bool,
+
+    // Update state
+    /// Available update version (if any)
+    pub update_available: Option<String>,
+    /// Whether user accepted the update
+    pub pending_update: bool,
+    /// Update result message
+    pub update_result: Option<String>,
 }
 
 /// Actions that need confirmation
@@ -236,6 +244,9 @@ impl AppState {
             status_expiry: 0,
             tick: 0,
             show_help: false,
+            update_available: None,
+            pending_update: false,
+            update_result: None,
         };
 
         state.refresh_data()?;
@@ -806,5 +817,21 @@ impl AppState {
         chrono::NaiveDate::parse_from_str(s.trim(), "%Y-%m-%d")
             .ok()
             .map(|date| date.and_hms_opt(23, 59, 59).unwrap().and_utc())
+    }
+
+    /// Set update available from background check
+    pub fn set_update_available(&mut self, version: String) {
+        self.update_available = Some(version);
+    }
+
+    /// Start the update process
+    pub fn start_update(&mut self) {
+        self.pending_update = true;
+        self.set_status("Updating...");
+    }
+
+    /// Dismiss the update notification
+    pub fn dismiss_update(&mut self) {
+        self.update_available = None;
     }
 }

@@ -124,6 +124,9 @@ enum Commands {
         #[arg(short, long)]
         list: Option<String>,
     },
+
+    /// Check for updates and install if available
+    Update,
 }
 
 #[derive(Subcommand, Debug)]
@@ -463,9 +466,56 @@ fn main() -> Result<()> {
                 tickit::export::export_tasks(&mut stdout, &tasks, &lists, &tags, fmt)?;
             }
         }
+
+        Some(Commands::Update) => {
+            run_update_command();
+        }
     }
 
     Ok(())
+}
+
+/// Run the update command
+fn run_update_command() {
+    use tickit::{
+        VERSION, VersionCheck, check_for_updates_crates_io, detect_package_manager, run_update,
+    };
+
+    println!("✓ Checking for updates...\n");
+
+    let pm = detect_package_manager();
+    println!("  Installed via: {}", pm.name());
+    println!("  Current version: {}", VERSION);
+
+    // Use crates.io API (no rate limits, more reliable)
+    let check = check_for_updates_crates_io();
+
+    match check {
+        VersionCheck::UpdateAvailable { latest, .. } => {
+            println!("  Latest version: {}", latest);
+            println!("\n⬆ Update available! Installing...\n");
+
+            match run_update(&pm) {
+                Ok(()) => {
+                    println!("✓ Successfully updated to {}!", latest);
+                    println!("\nRestart tickit to use the new version.");
+                }
+                Err(e) => {
+                    println!("✗ Update failed: {}", e);
+                    println!("\nYou can manually update with:");
+                    println!("  {}", pm.update_command());
+                    std::process::exit(1);
+                }
+            }
+        }
+        VersionCheck::UpToDate => {
+            println!("\n✓ Already on the latest version!");
+        }
+        VersionCheck::CheckFailed(msg) => {
+            println!("\n⚠ Could not check for updates: {}", msg);
+            std::process::exit(1);
+        }
+    }
 }
 
 /// Find a task by ID or partial title match

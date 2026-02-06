@@ -596,6 +596,39 @@ fn handle_about(state: &mut AppState, key: KeyEvent) {
             // Open GitHub repo
             let _ = open::that("https://github.com/ricardodantas/tickit");
         }
+        // Handle update from about dialog
+        KeyCode::Char('u') => {
+            if state.update_available.is_some() {
+                state.start_update();
+            }
+        }
         _ => {}
+    }
+}
+
+/// Process pending update (called from main loop)
+pub fn process_pending_update(state: &mut AppState) {
+    if !state.pending_update {
+        return;
+    }
+
+    let pm = crate::detect_package_manager();
+    match crate::run_update(&pm) {
+        Ok(()) => {
+            if let Some(version) = &state.update_available {
+                state.update_result = Some(format!("Updated to v{}! Restart to use.", version));
+            } else {
+                state.update_result = Some("Update complete! Restart to use.".to_string());
+            }
+            state.update_available = None;
+        }
+        Err(e) => {
+            state.update_result = Some(format!("Update failed: {}", e));
+        }
+    }
+
+    state.pending_update = false;
+    if let Some(msg) = &state.update_result {
+        state.set_status(msg.clone());
     }
 }

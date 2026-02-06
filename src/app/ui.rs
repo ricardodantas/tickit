@@ -392,6 +392,20 @@ fn render_status_bar(frame: &mut Frame, state: &AppState, area: Rect) {
             Span::styled(" ", Style::default()),
             Span::styled(msg, colors.text_secondary()),
         ]
+    } else if let Some(version) = &state.update_available {
+        // Show update notification
+        vec![
+            Span::styled(" ⬆ ", Style::default().fg(Color::Yellow)),
+            Span::styled(
+                format!("Update available: v{}", version),
+                Style::default().fg(Color::Yellow),
+            ),
+            Span::styled("  Press ", colors.text_muted()),
+            Span::styled("A", colors.key_hint()),
+            Span::styled(" then ", colors.text_muted()),
+            Span::styled("U", colors.key_hint()),
+            Span::styled(" to update", colors.text_muted()),
+        ]
     } else {
         vec![
             Span::styled(" ", Style::default()),
@@ -996,6 +1010,22 @@ fn render_about_dialog(frame: &mut Frame, state: &AppState) {
                     .add_modifier(Modifier::BOLD),
             ),
         ]),
+    ]);
+
+    // Show update available
+    if let Some(new_version) = &state.update_available {
+        lines.push(Line::from(vec![
+            Span::styled("Update: ", colors.text_muted()),
+            Span::styled(
+                format!("v{} available!", new_version),
+                Style::default()
+                    .fg(Color::Yellow)
+                    .add_modifier(Modifier::BOLD),
+            ),
+        ]));
+    }
+
+    lines.extend([
         Line::from(""),
         Line::from(vec![
             Span::styled("Author: ", colors.text_muted()),
@@ -1015,19 +1045,39 @@ fn render_about_dialog(frame: &mut Frame, state: &AppState) {
             colors.text_muted().add_modifier(Modifier::ITALIC),
         )),
         Line::from(""),
-        Line::from(vec![
+    ]);
+
+    // Build action hints line
+    let mut actions: Vec<Span> = vec![
+        Span::styled(
+            " [G] ",
+            Style::default()
+                .fg(colors.primary)
+                .add_modifier(Modifier::BOLD),
+        ),
+        Span::raw("Open GitHub"),
+    ];
+
+    if state.update_available.is_some() {
+        actions.extend([
+            Span::raw("  "),
             Span::styled(
-                " [G] ",
+                " [U] ",
                 Style::default()
-                    .fg(colors.primary)
+                    .fg(Color::Yellow)
                     .add_modifier(Modifier::BOLD),
             ),
-            Span::raw("Open GitHub"),
-            Span::raw("    "),
-            Span::styled(" [Esc] ", colors.text_muted()),
-            Span::raw("Close"),
-        ]),
+            Span::raw("Update"),
+        ]);
+    }
+
+    actions.extend([
+        Span::raw("  "),
+        Span::styled(" [Esc] ", colors.text_muted()),
+        Span::raw("Close"),
     ]);
+
+    lines.push(Line::from(actions));
 
     let paragraph = Paragraph::new(lines).alignment(Alignment::Center).block(
         Block::default()
