@@ -7,7 +7,7 @@
 </h1>
 
 <p align="center">
-  <strong>A stunning terminal-based task manager with CLI and TUI</strong>
+  <strong>A stunning terminal-based task manager inspired by <a href="https://www.reederapp.com/">Reeder</a></strong>
 </p>
 
 <p align="center">
@@ -39,6 +39,7 @@
 - [⌨️ Keybindings](#️-keybindings)
 - [🎨 Themes](#-themes)
 - [📤 Export Formats](#-export-formats)
+- [🏗️ Architecture](#️-architecture)
 - [🔧 Building from Source](#-building-from-source)
 - [🤝 Contributing](#-contributing)
 - [📄 License](#-license)
@@ -55,7 +56,7 @@
 Create, edit, and complete tasks with titles, descriptions, URLs, and priority levels.
 
 ### 📁 Lists
-Organize tasks into lists with a default Inbox for quick capture.
+Organize tasks into lists with custom icons. Default Inbox for quick capture.
 
 ### 🏷️ Tags
 Add colorful tags for flexible categorization and filtering.
@@ -82,12 +83,13 @@ Export to JSON, todo.txt, Markdown, or CSV formats.
 
 | Feature | Description |
 |---------|-------------|
-| ⚡ **Priority Levels** | None, Low, Medium, High, Urgent |
+| ⚡ **Priority Levels** | Low, Medium, High, Urgent |
 | 🔗 **Task URLs** | Attach links and open them with `o` |
 | 🎨 **15 Built-in Themes** | From Dracula to Cyberpunk |
 | 💾 **SQLite Storage** | Fast, reliable, self-contained |
 | 🔍 **Filter & Search** | By list, tag, or completion status |
 | ✅ **Toggle Completed** | Show/hide completed tasks |
+| 📅 **Due Dates** | Set deadlines for your tasks |
 
 <br>
 
@@ -123,41 +125,106 @@ Your tasks are stored in SQLite at `~/.config/tickit/tickit.sqlite`.
 
 ## 💻 CLI Commands
 
+Tickit provides a full CLI for scripting and quick actions.
+
+### Adding Tasks
+
 ```bash
-# Add a task
-tickit add "Buy groceries" --priority high --list Shopping
-tickit add "Review PR" --url "https://github.com/..." --tags work,urgent
+# Simple task
+tickit add "Buy groceries"
 
-# List tasks
-tickit list                    # Show incomplete tasks
-tickit list --all              # Include completed
-tickit list --list Work        # Filter by list
-tickit list --tag urgent       # Filter by tag
-tickit list --json             # Output as JSON
+# With priority and list
+tickit add "Review PR" --priority high --list Work
 
-# Complete/uncomplete
+# With URL and tags
+tickit add "Read article" --url "https://example.com" --tags reading,tech
+
+# With description
+tickit add "Write report" --description "Q4 summary for the team"
+```
+
+### Listing Tasks
+
+```bash
+# Show incomplete tasks
+tickit list
+
+# Include completed tasks
+tickit list --all
+
+# Filter by list
+tickit list --list Work
+
+# Filter by tag
+tickit list --tag urgent
+
+# Output as JSON
+tickit list --json
+```
+
+### Completing Tasks
+
+```bash
+# Mark as complete (partial match supported)
 tickit done "Buy groceries"
+
+# Mark as incomplete
 tickit undo "Buy groceries"
+```
 
-# Delete
+### Deleting Tasks
+
+```bash
+# Delete with confirmation
 tickit delete "Old task"
-tickit rm "Old task" --force   # Skip confirmation
 
-# Manage lists
-tickit lists                   # List all lists
+# Skip confirmation
+tickit delete "Old task" --force
+
+# Short alias
+tickit rm "Old task" -f
+```
+
+### Managing Lists
+
+```bash
+# List all lists
+tickit lists
+
+# Add a new list
 tickit lists add "Shopping" --icon "🛒"
+
+# Delete a list
 tickit lists delete "Old List"
+```
 
-# Manage tags
-tickit tags                    # List all tags
+### Managing Tags
+
+```bash
+# List all tags
+tickit tags
+
+# Add a new tag
 tickit tags add "urgent" --color "#ff0000"
-tickit tags delete "old-tag"
 
-# Export
-tickit export --format json --output tasks.json
+# Delete a tag
+tickit tags delete "old-tag"
+```
+
+### Exporting Tasks
+
+```bash
+# Export to JSON (default)
+tickit export --output tasks.json
+
+# Export to todo.txt format
 tickit export --format todotxt
-tickit export --format markdown --list Work
-tickit export --format csv
+
+# Export to Markdown
+tickit export --format markdown --output tasks.md
+
+# Export specific list to CSV
+tickit export --format csv --list Work --output work.csv
 ```
 
 <br>
@@ -260,6 +327,21 @@ Full data export with all fields — perfect for backups or integrations.
 tickit export --format json --output tasks.json
 ```
 
+```json
+{
+  "tasks": [
+    {
+      "id": "...",
+      "title": "Buy groceries",
+      "priority": "high",
+      "completed": false,
+      "list": "Shopping",
+      "tags": ["errands"]
+    }
+  ]
+}
+```
+
 ### todo.txt
 
 Compatible with the [todo.txt](http://todotxt.org/) format:
@@ -280,6 +362,9 @@ Human-readable format with checkboxes:
 ## 📥 Inbox
 - [ ] 🔴 Urgent task
 - [x] Completed task
+
+## 📋 Work
+- [ ] 🟡 Review PR
 ```
 
 ```bash
@@ -293,6 +378,65 @@ Spreadsheet-compatible format for Excel, Google Sheets, etc.
 ```bash
 tickit export --format csv --output tasks.csv
 ```
+
+<br>
+
+## 🏗️ Architecture
+
+Tickit is a single binary with both CLI and TUI modes.
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                         User                                │
+└─────────────────────────────────────────────────────────────┘
+                              │
+              ┌───────────────┴───────────────┐
+              ▼                               ▼
+┌─────────────────────────┐     ┌─────────────────────────────┐
+│      tickit (TUI)       │     │      tickit <cmd> (CLI)     │
+│  • Browse tasks         │     │  • Add tasks                │
+│  • Manage lists/tags    │     │  • List/filter tasks        │
+│  • Change themes        │     │  • Complete/delete          │
+│  • Visual editing       │     │  • Export data              │
+└─────────────────────────┘     └─────────────────────────────┘
+              │                               │
+              └───────────────┬───────────────┘
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                      SQLite Database                        │
+│                 ~/.config/tickit/tickit.sqlite              │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Data Model
+
+```
+┌──────────────────┐     ┌──────────────────┐
+│      Lists       │     │       Tags       │
+│  • id            │     │  • id            │
+│  • name          │     │  • name          │
+│  • icon          │     │  • color         │
+│  • is_inbox      │     └──────────────────┘
+└──────────────────┘              │
+         │                        │
+         │ 1:N                    │ M:N
+         ▼                        ▼
+┌─────────────────────────────────────────────────────────────┐
+│                         Tasks                               │
+│  • id, title, description, url                              │
+│  • priority (Low, Medium, High, Urgent)                     │
+│  • completed, completed_at                                  │
+│  • list_id, tag_ids[]                                       │
+│  • due_date, created_at, updated_at                         │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### File Locations
+
+| File | Path | Purpose |
+|------|------|---------|
+| Database | `~/.config/tickit/tickit.sqlite` | Tasks, lists, tags |
+| Config | `~/.config/tickit/config.toml` | Theme and settings |
 
 <br>
 
@@ -326,6 +470,10 @@ cargo install --path .
 # Run TUI in development
 cargo run
 
+# Run CLI commands
+cargo run -- add "Test task"
+cargo run -- list
+
 # Run tests
 cargo test
 
@@ -338,18 +486,11 @@ cargo fmt
 
 <br>
 
-## 📁 Data Storage
-
-| File | Path | Purpose |
-|------|------|---------|
-| Database | `~/.config/tickit/tickit.sqlite` | Tasks, lists, tags |
-| Config | `~/.config/tickit/config.toml` | Theme and settings |
-
-<br>
-
 ## 🤝 Contributing
 
-Contributions are welcome! 
+Contributions are welcome!
+
+### Quick Start for Contributors
 
 1. Fork the repository
 2. Create a feature branch: `git checkout -b feature/amazing-feature`
@@ -360,6 +501,28 @@ Contributions are welcome!
 7. Commit: `git commit -m "Add amazing feature"`
 8. Push: `git push origin feature/amazing-feature`
 9. Open a Pull Request
+
+### Project Structure
+
+```
+tickit/
+├── src/
+│   ├── main.rs          # CLI entry point
+│   ├── lib.rs           # Library root
+│   ├── app/             # TUI application
+│   │   ├── mod.rs       # App initialization
+│   │   ├── events.rs    # Key event handling
+│   │   ├── state.rs     # Application state
+│   │   └── ui.rs        # UI rendering
+│   ├── config.rs        # Configuration loading
+│   ├── db.rs            # SQLite operations
+│   ├── export.rs        # Export formats
+│   ├── models.rs        # Data models
+│   └── theme.rs         # Color themes
+├── screenshots/         # Screenshots for docs
+├── scripts/             # Helper scripts
+└── tests/               # Integration tests
+```
 
 <br>
 
