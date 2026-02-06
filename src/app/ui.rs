@@ -350,11 +350,7 @@ fn render_status_bar(frame: &mut Frame, state: &AppState, area: Rect) {
     let status_text = if let Some(msg) = &state.status_message {
         msg.clone()
     } else {
-        format!(
-            " {} {} │ ? Help │ t Theme │ A About │ q Quit",
-            ICON,
-            state.theme.name()
-        )
+        format!(" {} ? Help │ t Theme │ A About │ q Quit", ICON)
     };
 
     let status = Paragraph::new(status_text)
