@@ -567,7 +567,18 @@ fn render_task_editor(frame: &mut Frame, state: &AppState) {
         colors.block()
     };
     
-    let title_input = Paragraph::new(state.input_buffer.as_str())
+    // Show the correct title value depending on focus
+    let title_display = if title_focused {
+        state.input_buffer.as_str()
+    } else if state.editing_task.is_some() {
+        // Editing existing task - show from task
+        state.editing_task.as_ref().map(|t| t.title.as_str()).unwrap_or("")
+    } else {
+        // New task - show from title buffer
+        state.editor_title_buffer.as_str()
+    };
+    
+    let title_input = Paragraph::new(title_display)
         .block(
             Block::default()
                 .title(" Title ")
