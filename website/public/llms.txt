@@ -39,6 +39,9 @@ tickit list -l Work
 # Complete a task
 tickit done <task-id>
 
+# Check for updates
+tickit update
+
 # Launch the TUI
 tickit
 ```
@@ -110,6 +113,12 @@ UI:
 - One Dark
 - Solarized Dark/Light
 - And more...
+
+### Auto-Update
+- Check for updates: `tickit update`
+- Detects installation method (Cargo or Homebrew)
+- TUI shows update notification in status bar
+- One-click update from About dialog (press `A` then `U`)
 
 ## Configuration
 

@@ -90,6 +90,7 @@ Export to JSON, todo.txt, Markdown, or CSV formats.
 | 🔍 **Filter & Search** | By list, tag, or completion status |
 | ✅ **Toggle Completed** | Show/hide completed tasks |
 | 📅 **Due Dates** | Set deadlines for your tasks |
+| 🔄 **Auto-Update** | Check for updates from TUI or CLI |
 
 <br>
 
@@ -226,6 +227,15 @@ tickit export --format markdown --output tasks.md
 # Export specific list to CSV
 tickit export --format csv --list Work --output work.csv
 ```
+
+### Updating Tickit
+
+```bash
+# Check for updates and install if available
+tickit update
+```
+
+The update command automatically detects whether you installed via Cargo or Homebrew and uses the appropriate update method.
 
 <br>
 

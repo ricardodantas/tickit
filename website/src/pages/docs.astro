@@ -23,6 +23,7 @@ const baseUrl = import.meta.env.BASE_URL;
           <li><a href="#cli-lists">Manage Lists</a></li>
           <li><a href="#cli-tags">Manage Tags</a></li>
           <li><a href="#cli-export">Export</a></li>
+          <li><a href="#cli-update">Update</a></li>
         </ul>
 
         <h3>TUI</h3>
@@ -443,6 +444,31 @@ tickit export --format todotxt > todo.txt</code></pre>
               </tr>
             </tbody>
           </table>
+        </div>
+      </section>
+
+      <section id="cli-update">
+        <h2>Update</h2>
+
+        <p>Check for updates and install new versions directly from the command line:</p>
+
+        <div class="code-block">
+          <div class="code-header">
+            <span>Update command</span>
+            <button class="copy-btn" data-copy="tickit update">Copy</button>
+          </div>
+          <pre><code>tickit update</code></pre>
+        </div>
+
+        <p>The update command will:</p>
+        <ul>
+          <li>Check crates.io for the latest version</li>
+          <li>Detect your installation method (Cargo or Homebrew)</li>
+          <li>Automatically run the appropriate update command</li>
+        </ul>
+
+        <div class="callout info">
+          <strong>💡 TUI Auto-Update:</strong> Tickit also checks for updates automatically when you launch the TUI. If an update is available, you'll see a notification in the status bar. Press <kbd>A</kbd> to open the About dialog, then <kbd>U</kbd> to install the update.
         </div>
       </section>
 

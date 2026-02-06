@@ -36,7 +36,9 @@ cargo install tickit
 - **Tags**: Add colorful tags for flexible categorization
 - **Priority Levels**: None, Low, Medium, High, Urgent
 - **Task URLs**: Attach links and open them with `o`
+- **Due Dates**: Set deadlines with visual indicators
 - **Export**: JSON, todo.txt, Markdown, CSV formats
+- **Auto-Update**: Check for updates from CLI or TUI
 - **SQLite Storage**: Fast, reliable, self-contained
 
 ## CLI Usage
@@ -59,6 +61,9 @@ tickit undo "Buy groceries"
 
 # Export
 tickit export --format markdown --output tasks.md
+
+# Check for updates and install
+tickit update
 ```
 
 ## Keyboard Shortcuts (TUI)
