@@ -39,6 +39,13 @@ const baseUrl = import.meta.env.BASE_URL;
           <li><a href="#config-file">Config File</a></li>
           <li><a href="#themes">Themes</a></li>
         </ul>
+
+        <h3>Sync</h3>
+        <ul>
+          <li><a href="#sync-overview">Overview</a></li>
+          <li><a href="#sync-setup">Server Setup</a></li>
+          <li><a href="#sync-config">Client Configuration</a></li>
+        </ul>
       </nav>
     </aside>
 
@@ -699,6 +706,10 @@ tickit export --format todotxt > todo.txt</code></pre>
                 <td>About dialog</td>
               </tr>
               <tr>
+                <td><kbd>Ctrl</kbd>+<kbd>s</kbd></td>
+                <td>Sync with server (if configured)</td>
+              </tr>
+              <tr>
                 <td><kbd>q</kbd></td>
                 <td>Quit</td>
               </tr>
@@ -794,6 +805,214 @@ show_completed = false`}</code></pre>
         </div>
 
         <p style="margin-top: 1.5rem;"><a href={`${baseUrl}themes`} class="btn btn-secondary">Browse All Themes →</a></p>
+      </section>
+
+      <section id="sync-overview">
+        <h2>Sync Overview</h2>
+
+        <p>Tickit supports optional synchronization across multiple devices using a self-hosted sync server. <strong>Sync is completely optional</strong> — Tickit works fully offline by default.</p>
+
+        <div class="info-cards">
+          <div class="info-card">
+            <h4>🔒 Self-Hosted</h4>
+            <p>Your data stays on your infrastructure. No third-party services, complete privacy.</p>
+          </div>
+          <div class="info-card">
+            <h4>🔄 Multi-Device</h4>
+            <p>Sync tasks, lists, and tags between desktop, laptop, and more.</p>
+          </div>
+          <div class="info-card">
+            <h4>📴 Offline-First</h4>
+            <p>Changes sync when connection is available. Works fully offline.</p>
+          </div>
+        </div>
+
+        <h3>How It Works</h3>
+        <div class="code-block">
+          <pre><code>{`┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│   Laptop    │     │   Desktop   │     │   Phone     │
+│   Tickit    │     │   Tickit    │     │   (future)  │
+└──────┬──────┘     └──────┬──────┘     └──────┬──────┘
+       │                   │                   │
+       │    HTTPS + Token  │                   │
+       └───────────┬───────┴───────────────────┘
+                   │
+                   ▼
+          ┌───────────────┐
+          │  tickit-sync  │
+          │    Server     │
+          │   (SQLite)    │
+          └───────────────┘`}</code></pre>
+        </div>
+      </section>
+
+      <section id="sync-setup">
+        <h2>Server Setup</h2>
+
+        <p>First, deploy the <a href="https://github.com/ricardodantas/tickit-sync">tickit-sync</a> server on your infrastructure.</p>
+
+        <h3>Quick Start with Docker/Podman</h3>
+
+        <div class="code-block">
+          <div class="code-header">
+            <span>Docker</span>
+            <button class="copy-btn" data-copy="docker run -d --name tickit-sync -p 3030:3030 -v tickit-data:/data ricardodantas/tickit-sync">Copy</button>
+          </div>
+          <pre><code>docker run -d \
+  --name tickit-sync \
+  -p 3030:3030 \
+  -v tickit-data:/data \
+  ricardodantas/tickit-sync</code></pre>
+        </div>
+
+        <div class="code-block">
+          <div class="code-header">
+            <span>Podman</span>
+            <button class="copy-btn" data-copy="podman run -d --name tickit-sync -p 3030:3030 -v tickit-data:/data docker.io/ricardodantas/tickit-sync">Copy</button>
+          </div>
+          <pre><code>podman run -d \
+  --name tickit-sync \
+  -p 3030:3030 \
+  -v tickit-data:/data \
+  docker.io/ricardodantas/tickit-sync</code></pre>
+        </div>
+
+        <h3>Install from crates.io</h3>
+
+        <div class="code-block">
+          <div class="code-header">
+            <span>Cargo</span>
+            <button class="copy-btn" data-copy="cargo install tickit-sync">Copy</button>
+          </div>
+          <pre><code>cargo install tickit-sync</code></pre>
+        </div>
+
+        <h3>Generate API Token</h3>
+
+        <p>Each device needs its own API token:</p>
+
+        <div class="code-block">
+          <div class="code-header">
+            <span>Generate token</span>
+            <button class="copy-btn" data-copy='tickit-sync token --name "my-laptop"'>Copy</button>
+          </div>
+          <pre><code># In Docker/Podman
+docker exec tickit-sync tickit-sync token --name "my-laptop"
+
+# Or if installed locally
+tickit-sync token --name "my-laptop"
+
+# Output: Generated token for 'my-laptop': tks_abc123...</code></pre>
+        </div>
+
+        <p>Add the generated token to your server's <code>config.toml</code>:</p>
+
+        <div class="code-block">
+          <div class="code-header">
+            <span>/data/config.toml (in container)</span>
+          </div>
+          <pre><code>{`[[tokens]]
+name = "my-laptop"
+token = "tks_abc123..."`}</code></pre>
+        </div>
+
+        <div class="callout info">
+          <strong>💡 Tip:</strong> For production, use a reverse proxy (like Caddy or Traefik) to add HTTPS. See the <a href="https://github.com/ricardodantas/tickit-sync">tickit-sync documentation</a> for examples.
+        </div>
+      </section>
+
+      <section id="sync-config">
+        <h2>Client Configuration</h2>
+
+        <p>Configure Tickit to connect to your sync server by editing <code>~/.config/tickit/config.toml</code>:</p>
+
+        <div class="code-block">
+          <div class="code-header">
+            <span>~/.config/tickit/config.toml</span>
+            <button class="copy-btn" data-copy={`[sync]
+enabled = true
+server = "https://sync.yourdomain.com"
+token = "tks_your-token-here"
+interval_secs = 300`}>Copy</button>
+          </div>
+          <pre><code>{`[sync]
+enabled = true
+server = "https://sync.yourdomain.com"
+token = "tks_your-token-here"
+interval_secs = 300  # Sync every 5 minutes`}</code></pre>
+        </div>
+
+        <h3>Configuration Options</h3>
+
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Option</th>
+                <th>Description</th>
+                <th>Default</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>enabled</code></td>
+                <td>Enable/disable sync</td>
+                <td><code>false</code></td>
+              </tr>
+              <tr>
+                <td><code>server</code></td>
+                <td>URL of your tickit-sync server</td>
+                <td>—</td>
+              </tr>
+              <tr>
+                <td><code>token</code></td>
+                <td>API token for authentication</td>
+                <td>—</td>
+              </tr>
+              <tr>
+                <td><code>interval_secs</code></td>
+                <td>Auto-sync interval in seconds (0 = manual only)</td>
+                <td><code>300</code></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Manual Sync</h3>
+
+        <p>In addition to automatic sync, you can trigger a manual sync at any time:</p>
+
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Key</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><kbd>Ctrl</kbd>+<kbd>s</kbd></td>
+                <td>Trigger manual sync</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Sync Status</h3>
+
+        <p>The status bar shows the current sync state:</p>
+
+        <ul>
+          <li><strong>↻ Syncing...</strong> — Sync in progress</li>
+          <li><strong>☁ Synced</strong> — Last sync successful</li>
+          <li><strong>⚠ Sync: error</strong> — Sync failed (hover for details)</li>
+          <li><strong>Ctrl+S: sync</strong> — Sync configured but not yet synced</li>
+        </ul>
+
+        <div class="callout warning">
+          <strong>⚠️ Note:</strong> Sync uses last-write-wins conflict resolution. If the same task is edited on multiple devices before syncing, the most recent change wins.
+        </div>
       </section>
     </div>
   </div>
