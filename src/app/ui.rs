@@ -542,34 +542,59 @@ fn render_help_popup(frame: &mut Frame, state: &AppState) {
 /// Render theme picker
 fn render_theme_picker(frame: &mut Frame, state: &AppState) {
     let colors = state.theme.colors();
-    let area = centered_rect(40, 60, frame.area());
+    let area = centered_rect(50, 70, frame.area());
 
     frame.render_widget(Clear, area);
 
-    let theme_items: Vec<ListItem> = Theme::all()
+    let themes = Theme::all();
+    let items: Vec<ListItem> = themes
         .iter()
         .enumerate()
-        .map(|(i, theme)| {
+        .map(|(i, theme_name)| {
+            let palette = theme_name.palette();
             let selected = i == state.theme_index;
+
+            // Create color preview squares
+            let preview = format!(
+                "  {} {} ",
+                if selected { "▸" } else { " " },
+                theme_name.display_name()
+            );
+
             let style = if selected {
-                colors.selected()
+                Style::default()
+                    .fg(palette.accent)
+                    .bg(palette.selection)
+                    .add_modifier(Modifier::BOLD)
             } else {
-                colors.text()
+                Style::default().fg(palette.fg)
             };
-            let marker = if selected { "► " } else { "  " };
-            ListItem::new(format!("{}{}", marker, theme.display_name())).style(style)
+
+            ListItem::new(Line::from(vec![
+                Span::styled(preview, style),
+                Span::styled("█", Style::default().fg(palette.accent)),
+                Span::styled("█", Style::default().fg(palette.secondary)),
+                Span::styled("█", Style::default().fg(palette.success)),
+                Span::styled("█", Style::default().fg(palette.warning)),
+            ]))
         })
         .collect();
 
-    let themes = List::new(theme_items).block(
+    let theme_list = List::new(items).block(
         Block::default()
-            .title(" Theme ")
             .borders(Borders::ALL)
+            .border_style(Style::default().fg(colors.accent))
             .border_type(BorderType::Rounded)
-            .border_style(colors.block_focus()),
+            .style(Style::default().bg(colors.bg))
+            .title(format!(
+                " 🎨 Select Theme ({}/{}) ",
+                state.theme_index + 1,
+                themes.len()
+            ))
+            .title_bottom(Line::from(" ↑↓ navigate │ ↵ apply │ Esc cancel ").centered()),
     );
 
-    frame.render_widget(themes, area);
+    frame.render_widget(theme_list, area);
 }
 
 /// Render confirmation dialog
