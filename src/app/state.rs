@@ -158,6 +158,8 @@ pub struct AppState {
     pub editor_adding_tag: bool,
     /// New tag name buffer
     pub editor_new_tag_buffer: String,
+    /// Title buffer for new tasks (preserved when switching fields)
+    pub editor_title_buffer: String,
 
     // UI state
     /// Show completed tasks
@@ -218,6 +220,7 @@ impl AppState {
             editor_tag_cursor: 0,
             editor_adding_tag: false,
             editor_new_tag_buffer: String::new(),
+            editor_title_buffer: String::new(),
             show_completed,
             confirm_message: String::new(),
             confirm_action: None,
@@ -328,6 +331,7 @@ impl AppState {
         self.editor_tag_cursor = 0;
         self.editor_adding_tag = false;
         self.editor_new_tag_buffer.clear();
+        self.editor_title_buffer.clear();
 
         // Set editor list to current selected list or inbox
         if let Some(list_id) = self.selected_list_id {
@@ -358,6 +362,9 @@ impl AppState {
 
     /// Save the current task being edited
     pub fn save_task(&mut self) -> Result<()> {
+        // Save current field first
+        self.save_current_field_to_buffer();
+        
         let list_id = self.lists.get(self.editor_list_index)
             .map(|l| l.id)
             .unwrap_or_else(|| self.lists.iter().find(|l| l.is_inbox).unwrap().id);
@@ -376,12 +383,18 @@ impl AppState {
             self.db.update_task(&task)?;
             self.set_status("Task updated");
         } else {
-            // Create new task
-            if self.input_buffer.is_empty() {
+            // Create new task - use title buffer
+            let title = if self.editor_field == EditorField::Title {
+                self.input_buffer.clone()
+            } else {
+                self.editor_title_buffer.clone()
+            };
+            
+            if title.is_empty() {
                 self.set_status("Task title cannot be empty");
                 return Ok(());
             }
-            let mut task = Task::new(&self.input_buffer, list_id);
+            let mut task = Task::new(&title, list_id);
             task.priority = self.editor_priority;
             task.tag_ids = tag_ids;
             self.db.insert_task(&task)?;
@@ -637,6 +650,9 @@ impl AppState {
 
     /// Navigate editor fields
     pub fn next_editor_field(&mut self) {
+        // Save current field value before switching
+        self.save_current_field_to_buffer();
+        
         self.editor_field = match self.editor_field {
             EditorField::Title => EditorField::Priority,
             EditorField::Priority => EditorField::List,
@@ -648,6 +664,9 @@ impl AppState {
     }
 
     pub fn prev_editor_field(&mut self) {
+        // Save current field value before switching
+        self.save_current_field_to_buffer();
+        
         self.editor_field = match self.editor_field {
             EditorField::Title => EditorField::Tags,
             EditorField::Priority => EditorField::Title,
@@ -658,18 +677,28 @@ impl AppState {
         self.update_input_buffer_for_field();
     }
 
+    fn save_current_field_to_buffer(&mut self) {
+        // For new tasks, save title to dedicated buffer
+        if self.editing_task.is_none() && self.editor_field == EditorField::Title {
+            self.editor_title_buffer = self.input_buffer.clone();
+        }
+    }
+
     fn update_input_buffer_for_field(&mut self) {
         if let Some(task) = &self.editing_task {
+            // Editing existing task - load from task
             self.input_buffer = match self.editor_field {
                 EditorField::Title => task.title.clone(),
                 EditorField::Description => task.description.clone().unwrap_or_default(),
                 EditorField::Url => task.url.clone().unwrap_or_default(),
                 _ => String::new(),
             };
-        } else if self.editor_field == EditorField::Title {
-            // Keep buffer for new task
         } else {
-            self.input_buffer.clear();
+            // Adding new task - use title buffer
+            self.input_buffer = match self.editor_field {
+                EditorField::Title => self.editor_title_buffer.clone(),
+                _ => String::new(),
+            };
         }
         self.cursor_pos = self.input_buffer.len();
     }
