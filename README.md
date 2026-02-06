@@ -3,7 +3,7 @@
 </p>
 
 <h1 align="center">
-  ✓ Tickit
+  ✅ Tickit
 </h1>
 
 <p align="center">
