@@ -514,6 +514,21 @@ impl AppState {
         self.editing_list = None;
     }
 
+    /// Start editing the selected list
+    pub fn start_edit_list(&mut self) {
+        if let Some(list) = self.selected_list().cloned() {
+            if list.is_inbox {
+                self.set_status("Cannot edit inbox");
+                return;
+            }
+            self.mode = Mode::EditList;
+            self.editor_field = EditorField::Name;
+            self.input_buffer = list.name.clone();
+            self.cursor_pos = self.input_buffer.len();
+            self.editing_list = Some(list);
+        }
+    }
+
     /// Save the current list being edited
     pub fn save_list(&mut self) -> Result<()> {
         if self.input_buffer.is_empty() {
@@ -559,6 +574,17 @@ impl AppState {
         self.input_buffer.clear();
         self.cursor_pos = 0;
         self.editing_tag = None;
+    }
+
+    /// Start editing the selected tag
+    pub fn start_edit_tag(&mut self) {
+        if let Some(tag) = self.selected_tag().cloned() {
+            self.mode = Mode::EditTag;
+            self.editor_field = EditorField::Name;
+            self.input_buffer = tag.name.clone();
+            self.cursor_pos = self.input_buffer.len();
+            self.editing_tag = Some(tag);
+        }
     }
 
     /// Save the current tag being edited

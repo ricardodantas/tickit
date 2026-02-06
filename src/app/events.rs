@@ -7,169 +7,227 @@ use crate::theme::Theme;
 
 /// Handle a key event
 pub fn handle_key(state: &mut AppState, key: KeyEvent) {
-    // Global shortcuts
-    if key.modifiers.contains(KeyModifiers::CONTROL) {
-        match key.code {
-            KeyCode::Char('c') | KeyCode::Char('q') => {
-                state.should_quit = true;
-                return;
-            }
-            _ => {}
-        }
-    }
-
+    // Handle mode-specific input first
     match state.mode {
-        Mode::Normal => handle_normal_mode(state, key),
-        Mode::ThemePicker => handle_theme_picker(state, key),
-        Mode::Help => handle_help(state, key),
-        Mode::AddTask | Mode::EditTask => handle_task_editor(state, key),
-        Mode::AddList | Mode::EditList => handle_list_editor(state, key),
-        Mode::AddTag | Mode::EditTag => handle_tag_editor(state, key),
-        Mode::Confirm => handle_confirm(state, key),
-        Mode::Export => handle_export(state, key),
+        Mode::ThemePicker => {
+            handle_theme_picker(state, key);
+            return;
+        }
+        Mode::Help => {
+            if matches!(key.code, KeyCode::Esc | KeyCode::Char('?') | KeyCode::Enter) {
+                state.mode = Mode::Normal;
+                state.show_help = false;
+            }
+            return;
+        }
+        Mode::AddTask | Mode::EditTask => {
+            handle_task_editor(state, key);
+            return;
+        }
+        Mode::AddList | Mode::EditList => {
+            handle_list_editor(state, key);
+            return;
+        }
+        Mode::AddTag | Mode::EditTag => {
+            handle_tag_editor(state, key);
+            return;
+        }
+        Mode::Confirm => {
+            handle_confirm(state, key);
+            return;
+        }
+        Mode::Export => {
+            handle_export(state, key);
+            return;
+        }
+        Mode::Normal => {}
     }
-}
 
-/// Handle key events in normal mode
-fn handle_normal_mode(state: &mut AppState, key: KeyEvent) {
-    match key.code {
+    // Global keybindings (like Hazelnut)
+    match (key.modifiers, key.code) {
         // Quit
-        KeyCode::Char('q') => state.should_quit = true,
-
+        (KeyModifiers::CONTROL, KeyCode::Char('c'))
+        | (KeyModifiers::CONTROL, KeyCode::Char('q')) => {
+            state.should_quit = true;
+            return;
+        }
+        (_, KeyCode::Char('q')) => {
+            state.should_quit = true;
+            return;
+        }
         // Help
-        KeyCode::Char('?') => {
-            state.show_help = true;
+        (_, KeyCode::Char('?')) | (_, KeyCode::F(1)) => {
             state.mode = Mode::Help;
+            state.show_help = true;
+            return;
         }
-
-        // Theme picker
-        KeyCode::Char('t') if key.modifiers.contains(KeyModifiers::CONTROL) => {
-            state.mode = Mode::ThemePicker;
-        }
-
-        // View navigation (tabs)
-        KeyCode::Char('1') => {
-            state.view = View::Tasks;
-            state.focus = Focus::Main;
-        }
-        KeyCode::Char('2') => {
-            state.view = View::Lists;
-            state.focus = Focus::Main;
-        }
-        KeyCode::Char('3') => {
-            state.view = View::Tags;
-            state.focus = Focus::Main;
-        }
-
         // Tab between views
-        KeyCode::Tab => {
+        (_, KeyCode::Tab) => {
             state.view = match state.view {
                 View::Tasks => View::Lists,
                 View::Lists => View::Tags,
                 View::Tags => View::Tasks,
             };
+            state.focus = Focus::Main;
+            return;
         }
-        KeyCode::BackTab => {
+        (KeyModifiers::SHIFT, KeyCode::BackTab) => {
             state.view = match state.view {
                 View::Tasks => View::Tags,
                 View::Lists => View::Tasks,
                 View::Tags => View::Lists,
             };
+            state.focus = Focus::Main;
+            return;
         }
+        // Number keys for quick navigation (like Hazelnut)
+        (_, KeyCode::Char('1')) => {
+            state.view = View::Tasks;
+            state.focus = Focus::Main;
+            return;
+        }
+        (_, KeyCode::Char('2')) => {
+            state.view = View::Lists;
+            state.focus = Focus::Main;
+            return;
+        }
+        (_, KeyCode::Char('3')) => {
+            state.view = View::Tags;
+            state.focus = Focus::Main;
+            return;
+        }
+        // Theme picker (just 't', like Hazelnut/Feedo)
+        (_, KeyCode::Char('t')) => {
+            state.theme_index = Theme::all()
+                .iter()
+                .position(|t| *t == state.theme)
+                .unwrap_or(0);
+            state.mode = Mode::ThemePicker;
+            return;
+        }
+        _ => {}
+    }
 
-        // Focus switching (sidebar/main)
-        KeyCode::Char('h') | KeyCode::Left if state.view == View::Tasks => {
+    // View-specific keybindings
+    match state.view {
+        View::Tasks => handle_tasks_view(state, key),
+        View::Lists => handle_lists_view(state, key),
+        View::Tags => handle_tags_view(state, key),
+    }
+}
+
+/// Handle tasks view keybindings
+fn handle_tasks_view(state: &mut AppState, key: KeyEvent) {
+    match key.code {
+        // Focus switching (sidebar/main) with h/l
+        KeyCode::Char('h') | KeyCode::Left => {
             state.focus = Focus::Sidebar;
         }
-        KeyCode::Char('l') | KeyCode::Right if state.view == View::Tasks => {
+        KeyCode::Char('l') | KeyCode::Right => {
             state.focus = Focus::Main;
         }
 
         // Navigation
-        KeyCode::Char('j') | KeyCode::Down => handle_down(state),
-        KeyCode::Char('k') | KeyCode::Up => handle_up(state),
-        KeyCode::Char('g') => {
-            // Go to top
-            match (state.view, state.focus) {
-                (View::Tasks, Focus::Sidebar) => state.list_index = 0,
-                (View::Tasks, Focus::Main) => state.task_index = 0,
-                (View::Lists, _) => state.list_index = 0,
-                (View::Tags, _) => state.tag_index = 0,
+        KeyCode::Char('j') | KeyCode::Down => {
+            match state.focus {
+                Focus::Sidebar => {
+                    if state.list_index < state.lists.len() {
+                        state.list_index += 1;
+                    }
+                }
+                Focus::Main => {
+                    if !state.tasks.is_empty() && state.task_index < state.tasks.len() - 1 {
+                        state.task_index += 1;
+                    }
+                }
             }
         }
-        KeyCode::Char('G') => {
-            // Go to bottom
-            match (state.view, state.focus) {
-                (View::Tasks, Focus::Sidebar) => {
-                    state.list_index = state.lists.len(); // +1 for "All"
+        KeyCode::Char('k') | KeyCode::Up => {
+            match state.focus {
+                Focus::Sidebar => {
+                    if state.list_index > 0 {
+                        state.list_index -= 1;
+                    }
                 }
-                (View::Tasks, Focus::Main) => {
+                Focus::Main => {
+                    if state.task_index > 0 {
+                        state.task_index -= 1;
+                    }
+                }
+            }
+        }
+        KeyCode::Char('g') | KeyCode::Home => {
+            match state.focus {
+                Focus::Sidebar => state.list_index = 0,
+                Focus::Main => state.task_index = 0,
+            }
+        }
+        KeyCode::Char('G') | KeyCode::End => {
+            match state.focus {
+                Focus::Sidebar => state.list_index = state.lists.len(),
+                Focus::Main => {
                     if !state.tasks.is_empty() {
                         state.task_index = state.tasks.len() - 1;
                     }
                 }
-                (View::Lists, _) => {
-                    if !state.lists.is_empty() {
-                        state.list_index = state.lists.len();
+            }
+        }
+
+        // Enter - select list or toggle task
+        KeyCode::Enter => {
+            match state.focus {
+                Focus::Sidebar => {
+                    if state.list_index == 0 {
+                        state.selected_list_id = None;
+                    } else if let Some(list) = state.lists.get(state.list_index - 1) {
+                        state.selected_list_id = Some(list.id);
                     }
+                    let _ = state.refresh_tasks();
+                    state.task_index = 0;
+                    state.focus = Focus::Main;
                 }
-                (View::Tags, _) => {
-                    if !state.tags.is_empty() {
-                        state.tag_index = state.tags.len() - 1;
-                    }
+                Focus::Main => {
+                    let _ = state.toggle_task();
                 }
             }
         }
 
-        // Selection (list selection in sidebar)
-        KeyCode::Enter => handle_enter(state),
-
-        // Add new item
-        KeyCode::Char('a') | KeyCode::Char('n') => {
-            match state.view {
-                View::Tasks => state.start_add_task(),
-                View::Lists => state.start_add_list(),
-                View::Tags => state.start_add_tag(),
-            }
-        }
-
-        // Edit selected item
-        KeyCode::Char('e') => {
-            match state.view {
-                View::Tasks if state.focus == Focus::Main => state.start_edit_task(),
-                _ => {}
-            }
-        }
-
-        // Delete selected item
-        KeyCode::Char('d') | KeyCode::Delete => {
-            match state.view {
-                View::Tasks if state.focus == Focus::Main => state.confirm_delete_task(),
-                View::Lists => state.confirm_delete_list(),
-                View::Tags => state.confirm_delete_tag(),
-                _ => {}
-            }
-        }
-
-        // Toggle task completion
-        KeyCode::Char(' ') | KeyCode::Char('x') if state.view == View::Tasks && state.focus == Focus::Main => {
+        // Space or x - toggle task completion
+        KeyCode::Char(' ') | KeyCode::Char('x') if state.focus == Focus::Main => {
             let _ = state.toggle_task();
         }
 
-        // Toggle show completed
-        KeyCode::Char('c') => state.toggle_show_completed(),
+        // Add new task (n like Hazelnut)
+        KeyCode::Char('n') => {
+            state.start_add_task();
+        }
 
-        // Cycle priority
-        KeyCode::Char('p') if state.view == View::Tasks && state.focus == Focus::Main => {
+        // Edit task (e like Hazelnut)
+        KeyCode::Char('e') if state.focus == Focus::Main => {
+            state.start_edit_task();
+        }
+
+        // Delete task (d like Hazelnut)
+        KeyCode::Char('d') | KeyCode::Delete if state.focus == Focus::Main => {
+            state.confirm_delete_task();
+        }
+
+        // Toggle show completed (c)
+        KeyCode::Char('c') => {
+            state.toggle_show_completed();
+        }
+
+        // Cycle priority (p)
+        KeyCode::Char('p') if state.focus == Focus::Main => {
             let _ = state.cycle_task_priority();
         }
 
-        // Open URL
-        KeyCode::Char('o') if state.view == View::Tasks && state.focus == Focus::Main => {
+        // Open URL (o)
+        KeyCode::Char('o') if state.focus == Focus::Main => {
             state.open_task_url();
         }
 
-        // Refresh
+        // Refresh (r)
         KeyCode::Char('r') => {
             let _ = state.refresh_data();
             state.set_status("Refreshed");
@@ -179,110 +237,134 @@ fn handle_normal_mode(state: &mut AppState, key: KeyEvent) {
     }
 }
 
-fn handle_down(state: &mut AppState) {
-    match (state.view, state.focus) {
-        (View::Tasks, Focus::Sidebar) => {
-            if state.list_index < state.lists.len() {
-                state.list_index += 1;
-            }
-        }
-        (View::Tasks, Focus::Main) => {
-            if !state.tasks.is_empty() && state.task_index < state.tasks.len() - 1 {
-                state.task_index += 1;
-            }
-        }
-        (View::Lists, _) => {
-            if state.list_index < state.lists.len() {
-                state.list_index += 1;
-            }
-        }
-        (View::Tags, _) => {
-            if !state.tags.is_empty() && state.tag_index < state.tags.len() - 1 {
-                state.tag_index += 1;
-            }
-        }
-    }
-}
+/// Handle lists view keybindings
+fn handle_lists_view(state: &mut AppState, key: KeyEvent) {
+    let len = state.lists.len();
 
-fn handle_up(state: &mut AppState) {
-    match (state.view, state.focus) {
-        (View::Tasks, Focus::Sidebar) | (View::Lists, _) => {
+    match key.code {
+        // Add new list (n like Hazelnut)
+        KeyCode::Char('n') => {
+            state.start_add_list();
+            return;
+        }
+        _ => {}
+    }
+
+    if len == 0 {
+        return;
+    }
+
+    match key.code {
+        // Navigation
+        KeyCode::Char('j') | KeyCode::Down => {
+            if state.list_index < len - 1 {
+                state.list_index += 1;
+            }
+        }
+        KeyCode::Char('k') | KeyCode::Up => {
             if state.list_index > 0 {
                 state.list_index -= 1;
             }
         }
-        (View::Tasks, Focus::Main) => {
-            if state.task_index > 0 {
-                state.task_index -= 1;
+        KeyCode::Char('g') | KeyCode::Home => {
+            state.list_index = 0;
+        }
+        KeyCode::Char('G') | KeyCode::End => {
+            state.list_index = len - 1;
+        }
+
+        // Edit (e like Hazelnut)
+        KeyCode::Char('e') => {
+            state.start_edit_list();
+        }
+
+        // Delete (d like Hazelnut)
+        KeyCode::Char('d') | KeyCode::Delete => {
+            state.confirm_delete_list();
+        }
+
+        _ => {}
+    }
+}
+
+/// Handle tags view keybindings
+fn handle_tags_view(state: &mut AppState, key: KeyEvent) {
+    let len = state.tags.len();
+
+    match key.code {
+        // Add new tag (n like Hazelnut)
+        KeyCode::Char('n') => {
+            state.start_add_tag();
+            return;
+        }
+        _ => {}
+    }
+
+    if len == 0 {
+        return;
+    }
+
+    match key.code {
+        // Navigation
+        KeyCode::Char('j') | KeyCode::Down => {
+            if state.tag_index < len - 1 {
+                state.tag_index += 1;
             }
         }
-        (View::Tags, _) => {
+        KeyCode::Char('k') | KeyCode::Up => {
             if state.tag_index > 0 {
                 state.tag_index -= 1;
             }
         }
+        KeyCode::Char('g') | KeyCode::Home => {
+            state.tag_index = 0;
+        }
+        KeyCode::Char('G') | KeyCode::End => {
+            state.tag_index = len - 1;
+        }
+
+        // Edit (e like Hazelnut)
+        KeyCode::Char('e') => {
+            state.start_edit_tag();
+        }
+
+        // Delete (d like Hazelnut)
+        KeyCode::Char('d') | KeyCode::Delete => {
+            state.confirm_delete_tag();
+        }
+
+        _ => {}
     }
 }
 
-fn handle_enter(state: &mut AppState) {
-    match (state.view, state.focus) {
-        (View::Tasks, Focus::Sidebar) => {
-            // Select list and filter tasks
-            if state.list_index == 0 {
-                state.selected_list_id = None;
-            } else if let Some(list) = state.lists.get(state.list_index - 1) {
-                state.selected_list_id = Some(list.id);
-            }
-            let _ = state.refresh_tasks();
-            state.task_index = 0;
-            state.focus = Focus::Main;
-        }
-        (View::Tasks, Focus::Main) => {
-            // Toggle task or open editor
-            let _ = state.toggle_task();
-        }
-        (View::Lists, _) => {
-            // Could open list editor
-        }
-        (View::Tags, _) => {
-            // Could open tag editor
-        }
-    }
-}
-
-/// Handle theme picker
+/// Handle theme picker (like Hazelnut)
 fn handle_theme_picker(state: &mut AppState, key: KeyEvent) {
+    let themes = Theme::all();
+    let len = themes.len();
+
     match key.code {
-        KeyCode::Esc | KeyCode::Char('q') => {
+        KeyCode::Esc => {
             state.mode = Mode::Normal;
-        }
-        KeyCode::Char('j') | KeyCode::Down => {
-            let themes = Theme::all();
-            if state.theme_index < themes.len() - 1 {
-                state.theme_index += 1;
-                state.set_theme(themes[state.theme_index]);
-            }
-        }
-        KeyCode::Char('k') | KeyCode::Up => {
-            if state.theme_index > 0 {
-                state.theme_index -= 1;
-                state.set_theme(Theme::all()[state.theme_index]);
-            }
         }
         KeyCode::Enter => {
             state.set_status(format!("Theme: {}", state.theme.name()));
             state.mode = Mode::Normal;
         }
-        _ => {}
-    }
-}
-
-/// Handle help dialog
-fn handle_help(state: &mut AppState, key: KeyEvent) {
-    match key.code {
-        KeyCode::Esc | KeyCode::Char('q') | KeyCode::Char('?') => {
-            state.show_help = false;
-            state.mode = Mode::Normal;
+        KeyCode::Down | KeyCode::Char('j') => {
+            state.theme_index = (state.theme_index + 1) % len;
+            state.set_theme(themes[state.theme_index]);
+        }
+        KeyCode::Up | KeyCode::Char('k') => {
+            state.theme_index = state.theme_index.checked_sub(1).unwrap_or(len - 1);
+            state.set_theme(themes[state.theme_index]);
+        }
+        KeyCode::Home | KeyCode::Char('g') => {
+            state.theme_index = 0;
+            state.set_theme(themes[state.theme_index]);
+        }
+        KeyCode::End | KeyCode::Char('G') => {
+            state.theme_index = len - 1;
+            state.set_theme(themes[state.theme_index]);
         }
         _ => {}
     }
@@ -396,10 +478,6 @@ fn handle_task_editor(state: &mut AppState, key: KeyEvent) {
             } else {
                 state.toggle_editor_tag();
             }
-        }
-        KeyCode::Char('n') if state.editor_field == EditorField::Tags => {
-            // Quick shortcut to add new tag
-            state.start_inline_add_tag();
         }
 
         _ => {}
