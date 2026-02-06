@@ -1,0 +1,10 @@
+services:
+  tickit-sync:
+    build: .
+    ports:
+      - "3030:3030"
+    volumes:
+      - ./data:/data
+    environment:
+      - RUST_LOG=tickit_sync=info
+    restart: unless-stopped
