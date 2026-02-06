@@ -1,0 +1,53 @@
+[package]
+name = "tickit"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.93"
+authors = ["Ricardo Dantas"]
+description = "A stunning terminal-based task manager with CLI and TUI"
+license = "MIT"
+repository = "https://github.com/ricardodantas/tickit"
+keywords = ["tui", "todo", "task-manager", "cli", "terminal"]
+categories = ["command-line-utilities"]
+default-run = "tickit"
+
+[dependencies]
+# TUI
+ratatui = "0.30"
+crossterm = "0.29"
+
+# Async runtime
+tokio = { version = "1.49", features = ["full"] }
+
+# Database
+rusqlite = { version = "0.33", features = ["bundled"] }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+toml = "0.9"
+
+# CLI
+clap = { version = "4.5", features = ["derive"] }
+
+# Utilities
+dirs = "6.0"
+anyhow = "1.0"
+thiserror = "2.0"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+chrono = { version = "0.4", features = ["serde"] }
+open = "5.3"
+uuid = { version = "1.16", features = ["v4", "serde"] }
+
+[dev-dependencies]
+tempfile = "3.19"
+
+[[bin]]
+name = "tickit"
+path = "src/main.rs"
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true
