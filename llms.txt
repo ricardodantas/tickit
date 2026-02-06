@@ -1,0 +1,104 @@
+# Tickit
+
+> A stunning terminal-based task manager with CLI and TUI
+
+Tickit is a Rust-based terminal task manager with a beautiful TUI interface and powerful CLI. Organize tasks into lists, add colorful tags, set priorities, and export to multiple formats.
+
+## Quick Facts
+
+- **Type:** Command-line application / TUI
+- **Language:** Rust
+- **License:** MIT
+- **Platforms:** macOS, Linux, Windows
+- **Repository:** https://github.com/ricardodantas/tickit
+- **Author:** Ricardo Dantas
+- **Storage:** SQLite (bundled, no external deps)
+
+## Installation
+
+### From Source
+```bash
+git clone https://github.com/ricardodantas/tickit
+cd tickit
+cargo install --path .
+```
+
+### From crates.io (coming soon)
+```bash
+cargo install tickit
+```
+
+## Key Features
+
+- **Beautiful TUI**: Three-panel interface with 15 gorgeous themes
+- **Full CLI**: Script your task management with powerful commands
+- **Lists**: Organize tasks into lists with custom icons
+- **Tags**: Add colorful tags for flexible categorization
+- **Priority Levels**: None, Low, Medium, High, Urgent
+- **Task URLs**: Attach links and open them with `o`
+- **Export**: JSON, todo.txt, Markdown, CSV formats
+- **SQLite Storage**: Fast, reliable, self-contained
+
+## CLI Usage
+
+```bash
+# Launch the TUI
+tickit
+
+# Add a task
+tickit add "Buy groceries" --priority high --list Shopping
+
+# List tasks
+tickit list                    # Show incomplete tasks
+tickit list --all              # Include completed
+tickit list --list Work        # Filter by list
+
+# Complete/uncomplete
+tickit done "Buy groceries"
+tickit undo "Buy groceries"
+
+# Export
+tickit export --format markdown --output tasks.md
+```
+
+## Keyboard Shortcuts (TUI)
+
+### Navigation
+- `j`/`k` or arrows: Move up/down
+- `Tab`: Switch views (Tasks, Lists, Tags)
+- `1`/`2`/`3`: Jump to view directly
+
+### Tasks
+- `Enter`/`Space`: Toggle complete
+- `n`: New task
+- `e`: Edit task
+- `d`: Delete task
+- `p`: Cycle priority
+- `o`: Open task URL
+- `c`: Toggle show completed
+
+### General
+- `t`: Theme picker
+- `?`: Help
+- `q`: Quit
+
+## Data Storage
+
+- **Database**: `~/.config/tickit/tickit.sqlite`
+- **Config**: `~/.config/tickit/config.toml`
+
+## Themes
+
+15 built-in themes: Dracula (default), One Dark Pro, Nord, Catppuccin Mocha/Latte, Gruvbox Dark/Light, Tokyo Night, Solarized Dark/Light, Monokai Pro, Rosé Pine, Kanagawa, Everforest, Cyberpunk.
+
+## Export Formats
+
+- **JSON**: Full data export with all fields
+- **todo.txt**: Compatible with todo.txt specification
+- **Markdown**: Human-readable with checkboxes
+- **CSV**: Spreadsheet-compatible
+
+## Links
+
+- GitHub: https://github.com/ricardodantas/tickit
+- Issues: https://github.com/ricardodantas/tickit/issues
