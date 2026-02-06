@@ -8,6 +8,8 @@
 //! - Optional sync with self-hosted server
 //! - Export to multiple formats
 
+#![allow(clippy::enum_variant_names)]
+#![allow(clippy::single_match)]
 pub mod app;
 pub mod config;
 pub mod db;
