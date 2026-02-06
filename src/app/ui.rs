@@ -146,7 +146,7 @@ fn render_tasks_view(frame: &mut Frame, state: &AppState, area: Rect) {
     } else {
         colors.text()
     };
-    let task_count = state.db.get_total_task_count(!state.show_completed).unwrap_or(0);
+    let task_count = state.db.get_total_task_count(state.show_completed).unwrap_or(0);
     list_items.push(ListItem::new(Line::from(vec![
         Span::styled("  📚 ", all_style),
         Span::styled("All", all_style),
@@ -161,7 +161,7 @@ fn render_tasks_view(frame: &mut Frame, state: &AppState, area: Rect) {
         } else {
             colors.text()
         };
-        let count = state.db.get_task_count(list.id, !state.show_completed).unwrap_or(0);
+        let count = state.db.get_task_count(list.id, state.show_completed).unwrap_or(0);
         list_items.push(ListItem::new(Line::from(vec![
             Span::styled(format!("  {} ", list.icon), style),
             Span::styled(&list.name, style),
