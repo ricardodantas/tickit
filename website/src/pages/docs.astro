@@ -766,14 +766,29 @@ tickit export --format todotxt > todo.txt</code></pre>
 theme = "dracula"
 
 # Show completed tasks by default
-show_completed = false`}>Copy</button>
+show_completed = false
+
+# Desktop notifications for due tasks (default: true)
+notifications = true`}>Copy</button>
           </div>
           <pre><code>{`# Theme name (see themes page for options)
 theme = "dracula"
 
 # Show completed tasks by default
-show_completed = false`}</code></pre>
+show_completed = false
+
+# Desktop notifications for due tasks (default: true)
+notifications = true`}</code></pre>
         </div>
+
+        <h3>Desktop Notifications</h3>
+        <p>When enabled, Tickit shows desktop notifications on startup for:</p>
+        <ul>
+          <li><strong>Tasks due today</strong> — Shows priority emoji (🔴🟠🟡🟢) and task title</li>
+          <li><strong>Tasks due tomorrow</strong> — Only for high/urgent priority tasks (advance warning)</li>
+          <li><strong>Overdue tasks</strong> — Warning for tasks past their due date</li>
+        </ul>
+        <p>Notifications work on Linux (DBus), macOS (Notification Center), and Windows (Toast notifications).</p>
       </section>
 
       <section id="themes">

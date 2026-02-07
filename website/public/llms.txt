@@ -97,6 +97,15 @@ UI:
   - Gray: Future dates
 - CLI support: `--due 2026-02-15`
 
+### Desktop Notifications
+- Get notified on app startup for:
+  - Tasks due today (shows priority + task title)
+  - Tasks due tomorrow (high/urgent priority only)
+  - Overdue tasks (past due date)
+- Works on Linux (DBus), macOS (Notification Center), Windows (Toast)
+- Toggle in config: `notifications = true/false`
+- Enabled by default
+
 ### Export
 - JSON: Full structured export
 - Markdown: Human-readable format
@@ -127,6 +136,13 @@ Config file location: `~/.config/tickit/config.toml`
 ```toml
 theme = "dracula"
 show_completed = false
+notifications = true  # Desktop notifications for due tasks
+
+[sync]
+enabled = false
+server = "https://your-sync-server.com"
+token = "your-api-token"
+interval_secs = 300
 ```
 
 Database location: `~/.config/tickit/tickit.sqlite`
