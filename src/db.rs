@@ -329,7 +329,12 @@ impl Database {
     pub fn update_tag(&self, tag: &Tag) -> Result<()> {
         self.conn.execute(
             "UPDATE tags SET name = ?2, color = ?3, updated_at = ?4 WHERE id = ?1",
-            params![tag.id.to_string(), tag.name, tag.color, tag.updated_at.to_rfc3339()],
+            params![
+                tag.id.to_string(),
+                tag.name,
+                tag.color,
+                tag.updated_at.to_rfc3339()
+            ],
         )?;
         Ok(())
     }
