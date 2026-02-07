@@ -19,6 +19,7 @@ use std::time::{Duration, Instant};
 
 use crate::config::Config;
 use crate::db::Database;
+use crate::notifications;
 use crate::sync::{RecordType, SyncClient, SyncRecord, SyncResponse};
 
 /// Messages from background tasks
@@ -44,7 +45,7 @@ pub fn run() -> Result<()> {
     terminal.clear()?;
 
     // Create app state
-    let mut state = AppState::new(config, db)?;
+    let mut state = AppState::new(config.clone(), db)?;
 
     // Spawn background update check
     let (tx, rx) = mpsc::channel();
@@ -54,6 +55,16 @@ pub fn run() -> Result<()> {
             let _ = tx.send(BackgroundMsg::UpdateAvailable(latest));
         }
     });
+
+    // Check for due tasks and send notifications (in background)
+    if config.notifications {
+        let db_for_notifications = Database::open().ok();
+        std::thread::spawn(move || {
+            if let Some(db) = db_for_notifications {
+                let _ = check_and_notify_due_tasks(&db);
+            }
+        });
+    }
 
     // Main loop
     let result = run_app(&mut terminal, &mut state, rx);
@@ -87,7 +98,9 @@ fn run_app(
                 BackgroundMsg::UpdateAvailable(version) => {
                     state.set_update_available(version);
                 }
-                BackgroundMsg::SyncComplete(_) => {} // Handled by sync_rx
+                BackgroundMsg::SyncComplete(_) => {
+                    // Handled by sync_rx
+                }
             }
         }
 
@@ -282,4 +295,51 @@ fn apply_incoming_changes(db: &Database, response: &SyncResponse) -> usize {
     }
 
     applied
+}
+
+/// Check for tasks due today/tomorrow and send notifications
+fn check_and_notify_due_tasks(db: &Database) -> usize {
+    use crate::models::Priority;
+    use chrono::Local;
+
+    let today = Local::now().date_naive();
+    let tomorrow = today.succ_opt().unwrap_or(today);
+
+    let mut notified = 0;
+
+    // Get all incomplete tasks with due dates
+    if let Ok(tasks) = db.get_all_tasks() {
+        for task in tasks {
+            // Skip completed tasks
+            if task.completed {
+                continue;
+            }
+
+            // Check if task has a due date
+            if let Some(due_datetime) = &task.due_date {
+                let due_date = due_datetime.date_naive();
+
+                if due_date == today {
+                    // Task is due today
+                    if notifications::notify_task_due_today(&task).is_ok() {
+                        notified += 1;
+                    }
+                } else if due_date == tomorrow
+                    && (task.priority == Priority::High || task.priority == Priority::Urgent)
+                {
+                    // High/urgent task due tomorrow - advance warning
+                    if notifications::notify_task_due_tomorrow(&task).is_ok() {
+                        notified += 1;
+                    }
+                } else if due_date < today {
+                    // Task is overdue
+                    if notifications::notify_task_overdue(&task).is_ok() {
+                        notified += 1;
+                    }
+                }
+            }
+        }
+    }
+
+    notified
 }

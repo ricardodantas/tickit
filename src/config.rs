@@ -28,6 +28,10 @@ pub struct Config {
     #[serde(default = "default_vim_mode")]
     pub vim_mode: bool,
 
+    /// Enable desktop notifications for due tasks
+    #[serde(default = "default_notifications")]
+    pub notifications: bool,
+
     /// Sync configuration (optional)
     #[serde(default)]
     pub sync: SyncConfig,
@@ -63,6 +67,10 @@ fn default_vim_mode() -> bool {
     true
 }
 
+fn default_notifications() -> bool {
+    true
+}
+
 fn default_sync_interval() -> u64 {
     300 // 5 minutes
 }
@@ -75,6 +83,7 @@ impl Default for Config {
             default_list_id: None,
             date_format: default_date_format(),
             vim_mode: default_vim_mode(),
+            notifications: default_notifications(),
             sync: SyncConfig::default(),
         }
     }

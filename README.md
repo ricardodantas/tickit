@@ -91,6 +91,7 @@ Export to JSON, todo.txt, Markdown, or CSV formats.
 | 🔍 **Filter & Search** | By list, tag, or completion status |
 | ✅ **Toggle Completed** | Show/hide completed tasks |
 | 📅 **Due Dates** | Set deadlines for your tasks |
+| 🔔 **Desktop Notifications** | Alerts for due and overdue tasks |
 | 🔄 **Auto-Update** | Check for updates from TUI or CLI |
 | ☁️ **Optional Sync** | Self-hosted sync server for multiple devices |
 
