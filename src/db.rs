@@ -64,7 +64,8 @@ impl Database {
                 id TEXT PRIMARY KEY,
                 name TEXT NOT NULL UNIQUE,
                 color TEXT NOT NULL,
-                created_at TEXT NOT NULL
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
             );
 
             -- Tasks table
@@ -116,8 +117,36 @@ impl Database {
             "#,
         )?;
 
+        // Run migrations for existing databases
+        self.migrate()?;
+
         // Ensure inbox list exists
         self.ensure_inbox()?;
+
+        Ok(())
+    }
+
+    /// Run database migrations
+    fn migrate(&self) -> Result<()> {
+        // Check if tags.updated_at column exists
+        let has_updated_at: bool = self
+            .conn
+            .query_row(
+                "SELECT COUNT(*) > 0 FROM pragma_table_info('tags') WHERE name = 'updated_at'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap_or(false);
+
+        if !has_updated_at {
+            // Add updated_at column with default value of created_at
+            self.conn.execute_batch(
+                r#"
+                ALTER TABLE tags ADD COLUMN updated_at TEXT;
+                UPDATE tags SET updated_at = created_at WHERE updated_at IS NULL;
+                "#,
+            )?;
+        }
 
         Ok(())
     }
@@ -257,12 +286,13 @@ impl Database {
     /// Insert a new tag
     pub fn insert_tag(&self, tag: &Tag) -> Result<()> {
         self.conn.execute(
-            "INSERT INTO tags (id, name, color, created_at) VALUES (?1, ?2, ?3, ?4)",
+            "INSERT INTO tags (id, name, color, created_at, updated_at) VALUES (?1, ?2, ?3, ?4, ?5)",
             params![
                 tag.id.to_string(),
                 tag.name,
                 tag.color,
                 tag.created_at.to_rfc3339(),
+                tag.updated_at.to_rfc3339(),
             ],
         )?;
         Ok(())
@@ -272,16 +302,23 @@ impl Database {
     pub fn get_tags(&self) -> Result<Vec<Tag>> {
         let mut stmt = self
             .conn
-            .prepare("SELECT id, name, color, created_at FROM tags ORDER BY name")?;
+            .prepare("SELECT id, name, color, created_at, updated_at FROM tags ORDER BY name")?;
 
         let tags = stmt.query_map([], |row| {
+            let created_at = chrono::DateTime::parse_from_rfc3339(&row.get::<_, String>(3)?)
+                .unwrap()
+                .with_timezone(&chrono::Utc);
+            let updated_at = row
+                .get::<_, Option<String>>(4)?
+                .and_then(|s| chrono::DateTime::parse_from_rfc3339(&s).ok())
+                .map(|dt| dt.with_timezone(&chrono::Utc))
+                .unwrap_or(created_at);
             Ok(Tag {
                 id: Uuid::parse_str(&row.get::<_, String>(0)?).unwrap(),
                 name: row.get(1)?,
                 color: row.get(2)?,
-                created_at: chrono::DateTime::parse_from_rfc3339(&row.get::<_, String>(3)?)
-                    .unwrap()
-                    .with_timezone(&chrono::Utc),
+                created_at,
+                updated_at,
             })
         })?;
 
@@ -291,8 +328,8 @@ impl Database {
     /// Update a tag
     pub fn update_tag(&self, tag: &Tag) -> Result<()> {
         self.conn.execute(
-            "UPDATE tags SET name = ?2, color = ?3 WHERE id = ?1",
-            params![tag.id.to_string(), tag.name, tag.color],
+            "UPDATE tags SET name = ?2, color = ?3, updated_at = ?4 WHERE id = ?1",
+            params![tag.id.to_string(), tag.name, tag.color, tag.updated_at.to_rfc3339()],
         )?;
         Ok(())
     }
@@ -734,6 +771,33 @@ impl Database {
         lists.collect::<Result<Vec<_>, _>>().map_err(Into::into)
     }
 
+    /// Get tags modified since a given time
+    pub fn get_tags_since(&self, since: chrono::DateTime<chrono::Utc>) -> Result<Vec<Tag>> {
+        let mut stmt = self.conn.prepare(
+            "SELECT id, name, color, created_at, updated_at FROM tags WHERE updated_at > ?1",
+        )?;
+
+        let tags = stmt.query_map(params![since.to_rfc3339()], |row| {
+            let created_at = chrono::DateTime::parse_from_rfc3339(&row.get::<_, String>(3)?)
+                .unwrap()
+                .with_timezone(&chrono::Utc);
+            let updated_at = row
+                .get::<_, Option<String>>(4)?
+                .and_then(|s| chrono::DateTime::parse_from_rfc3339(&s).ok())
+                .map(|dt| dt.with_timezone(&chrono::Utc))
+                .unwrap_or(created_at);
+            Ok(Tag {
+                id: Uuid::parse_str(&row.get::<_, String>(0)?).unwrap(),
+                name: row.get(1)?,
+                color: row.get(2)?,
+                created_at,
+                updated_at,
+            })
+        })?;
+
+        tags.collect::<Result<Vec<_>, _>>().map_err(Into::into)
+    }
+
     /// Upsert a task (insert or update based on updated_at)
     pub fn upsert_task(&self, task: &Task) -> Result<()> {
         // Check if task exists and compare timestamps
@@ -819,13 +883,14 @@ impl Database {
     /// Upsert a tag (insert or replace)
     pub fn upsert_tag(&self, tag: &Tag) -> Result<()> {
         self.conn.execute(
-            r#"INSERT OR REPLACE INTO tags (id, name, color, created_at)
-               VALUES (?1, ?2, ?3, ?4)"#,
+            r#"INSERT OR REPLACE INTO tags (id, name, color, created_at, updated_at)
+               VALUES (?1, ?2, ?3, ?4, ?5)"#,
             params![
                 tag.id.to_string(),
                 tag.name,
                 tag.color,
                 tag.created_at.to_rfc3339(),
+                tag.updated_at.to_rfc3339(),
             ],
         )?;
         Ok(())

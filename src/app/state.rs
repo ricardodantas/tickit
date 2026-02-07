@@ -670,6 +670,7 @@ impl AppState {
 
         if let Some(mut tag) = self.editing_tag.take() {
             tag.name = self.input_buffer.clone();
+            tag.touch(); // Update the updated_at timestamp
             self.db.update_tag(&tag)?;
             self.set_status("Tag updated");
         } else {

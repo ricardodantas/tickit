@@ -263,16 +263,20 @@ pub struct Tag {
     pub color: String,
     /// Creation timestamp
     pub created_at: DateTime<Utc>,
+    /// Last update timestamp
+    pub updated_at: DateTime<Utc>,
 }
 
 impl Tag {
     /// Create a new tag with the given name
     pub fn new(name: impl Into<String>) -> Self {
+        let now = Utc::now();
         Self {
             id: Uuid::new_v4(),
             name: name.into(),
             color: Self::random_color(),
-            created_at: Utc::now(),
+            created_at: now,
+            updated_at: now,
         }
     }
 
@@ -280,6 +284,11 @@ impl Tag {
     pub fn with_color(mut self, color: impl Into<String>) -> Self {
         self.color = color.into();
         self
+    }
+
+    /// Mark as updated (sets updated_at to now)
+    pub fn touch(&mut self) {
+        self.updated_at = Utc::now();
     }
 
     /// Generate a random pleasant color

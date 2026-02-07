@@ -208,6 +208,11 @@ fn gather_local_changes(
                 changes.push(SyncRecord::List(list));
             }
         }
+        if let Ok(tags) = db.get_tags_since(since) {
+            for tag in tags {
+                changes.push(SyncRecord::Tag(tag));
+            }
+        }
         // Get tombstones
         if let Ok(tombstones) = db.get_tombstones_since(since) {
             for (id, record_type_str, deleted_at) in tombstones {
