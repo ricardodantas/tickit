@@ -488,7 +488,10 @@ fn main() -> Result<()> {
 
 /// Run the sync command
 fn run_sync_command(status_only: bool) -> Result<()> {
-    use tickit::{Config, Database, sync::{SyncClient, SyncRecord}};
+    use tickit::{
+        Config, Database,
+        sync::{SyncClient, SyncRecord},
+    };
 
     let config = Config::load()?;
     let db = Database::open()?;
@@ -515,9 +518,17 @@ fn run_sync_command(status_only: bool) -> Result<()> {
     if status_only {
         let last_sync = db.get_last_sync()?;
         println!("Sync Status:");
-        println!("  Server: {}", config.sync.server.as_deref().unwrap_or("not set"));
+        println!(
+            "  Server: {}",
+            config.sync.server.as_deref().unwrap_or("not set")
+        );
         println!("  Enabled: {}", config.sync.enabled);
-        println!("  Last sync: {}", last_sync.map(|t| t.to_string()).unwrap_or_else(|| "never".to_string()));
+        println!(
+            "  Last sync: {}",
+            last_sync
+                .map(|t| t.to_string())
+                .unwrap_or_else(|| "never".to_string())
+        );
         return Ok(());
     }
 
@@ -597,11 +608,19 @@ fn run_sync_command(status_only: bool) -> Result<()> {
                         db.upsert_tag(&tag)?;
                         applied += 1;
                     }
-                    SyncRecord::Deleted { id, record_type, .. } => {
+                    SyncRecord::Deleted {
+                        id, record_type, ..
+                    } => {
                         match record_type {
-                            tickit::sync::RecordType::Task => { let _ = db.delete_task(id); }
-                            tickit::sync::RecordType::List => { let _ = db.delete_list(id); }
-                            tickit::sync::RecordType::Tag => { let _ = db.delete_tag(id); }
+                            tickit::sync::RecordType::Task => {
+                                let _ = db.delete_task(id);
+                            }
+                            tickit::sync::RecordType::List => {
+                                let _ = db.delete_list(id);
+                            }
+                            tickit::sync::RecordType::Tag => {
+                                let _ = db.delete_tag(id);
+                            }
                             _ => {}
                         }
                         applied += 1;

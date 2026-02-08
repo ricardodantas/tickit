@@ -833,6 +833,33 @@ impl Database {
 
     /// Upsert a list (insert or update based on updated_at)
     pub fn upsert_list(&self, list: &List) -> Result<()> {
+        // Special handling for inbox: if incoming list is an inbox, merge with local inbox
+        if list.is_inbox {
+            let local_inbox = self.get_inbox()?;
+            if local_inbox.id != list.id {
+                // Different inbox IDs - this is a sync from another device
+                // Update all tasks that reference the remote inbox to use local inbox
+                self.conn.execute(
+                    "UPDATE tasks SET list_id = ?1 WHERE list_id = ?2",
+                    params![local_inbox.id.to_string(), list.id.to_string()],
+                )?;
+                // Don't insert the remote inbox, keep using local one
+                // But update local inbox metadata if remote is newer
+                if list.updated_at > local_inbox.updated_at {
+                    self.conn.execute(
+                        "UPDATE lists SET name = ?1, description = ?2, icon = ?3 WHERE id = ?4",
+                        params![
+                            list.name,
+                            list.description,
+                            list.icon,
+                            local_inbox.id.to_string()
+                        ],
+                    )?;
+                }
+                return Ok(());
+            }
+        }
+
         let existing = self.conn.query_row(
             "SELECT updated_at FROM lists WHERE id = ?1",
             params![list.id.to_string()],

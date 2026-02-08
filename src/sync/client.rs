@@ -92,14 +92,19 @@ impl SyncClient {
             .context("Failed to connect to sync server")?;
 
         let status = response.status();
-        let body = response.into_string().context("Failed to read response body")?;
+        let body = response
+            .into_string()
+            .context("Failed to read response body")?;
 
         if status != 200 {
             anyhow::bail!("Sync failed with status {}: {}", status, body);
         }
 
         serde_json::from_str(&body).with_context(|| {
-            format!("Failed to parse sync response: {}", &body[..body.len().min(500)])
+            format!(
+                "Failed to parse sync response: {}",
+                &body[..body.len().min(500)]
+            )
         })
     }
 
