@@ -175,35 +175,26 @@ fn render_tasks_view(frame: &mut Frame, state: &AppState, area: Rect) {
 
     let mut list_items: Vec<ListItem> = Vec::new();
 
-    // "All" item
-    let all_selected = state.list_index == 0;
-    let all_style = if all_selected {
-        colors.selected()
-    } else {
-        colors.text()
-    };
-    let task_count = state
-        .db
-        .get_total_task_count(state.show_completed)
-        .unwrap_or(0);
-    list_items.push(ListItem::new(Line::from(vec![
-        Span::styled("  📚 ", all_style),
-        Span::styled("All", all_style),
-        Span::styled(format!(" ({})", task_count), colors.text_muted()),
-    ])));
-
-    // Lists
+    // Lists (no more "All" - Inbox shows all tasks)
     for (i, list) in state.lists.iter().enumerate() {
-        let selected = state.list_index == i + 1;
+        let selected = state.list_index == i;
         let style = if selected {
             colors.selected()
         } else {
             colors.text()
         };
-        let count = state
-            .db
-            .get_task_count(list.id, state.show_completed)
-            .unwrap_or(0);
+        // Inbox shows total task count (all tasks), other lists show their own count
+        let count = if list.is_inbox {
+            state
+                .db
+                .get_total_task_count(state.show_completed)
+                .unwrap_or(0)
+        } else {
+            state
+                .db
+                .get_task_count(list.id, state.show_completed)
+                .unwrap_or(0)
+        };
         list_items.push(ListItem::new(Line::from(vec![
             Span::styled(format!("  {} ", list.icon), style),
             Span::styled(&list.name, style),

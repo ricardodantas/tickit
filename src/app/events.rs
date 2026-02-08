@@ -166,7 +166,7 @@ fn handle_tasks_view(state: &mut AppState, key: KeyEvent) {
         // Navigation
         KeyCode::Char('j') | KeyCode::Down => match state.focus {
             Focus::Sidebar => {
-                if state.list_index < state.lists.len() {
+                if !state.lists.is_empty() && state.list_index < state.lists.len() - 1 {
                     state.list_index += 1;
                 }
             }
@@ -193,7 +193,11 @@ fn handle_tasks_view(state: &mut AppState, key: KeyEvent) {
             Focus::Main => state.task_index = 0,
         },
         KeyCode::Char('G') | KeyCode::End => match state.focus {
-            Focus::Sidebar => state.list_index = state.lists.len(),
+            Focus::Sidebar => {
+                if !state.lists.is_empty() {
+                    state.list_index = state.lists.len() - 1;
+                }
+            }
             Focus::Main => {
                 if !state.tasks.is_empty() {
                     state.task_index = state.tasks.len() - 1;
@@ -204,10 +208,13 @@ fn handle_tasks_view(state: &mut AppState, key: KeyEvent) {
         // Enter - select list or toggle task
         KeyCode::Enter => match state.focus {
             Focus::Sidebar => {
-                if state.list_index == 0 {
-                    state.selected_list_id = None;
-                } else if let Some(list) = state.lists.get(state.list_index - 1) {
-                    state.selected_list_id = Some(list.id);
+                if let Some(list) = state.lists.get(state.list_index) {
+                    // Inbox shows all tasks, other lists show only their tasks
+                    if list.is_inbox {
+                        state.selected_list_id = None;
+                    } else {
+                        state.selected_list_id = Some(list.id);
+                    }
                 }
                 let _ = state.refresh_tasks();
                 state.task_index = 0;

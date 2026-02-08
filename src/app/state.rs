@@ -279,9 +279,9 @@ impl AppState {
         self.tags = self.db.get_tags()?;
         self.refresh_tasks()?;
 
-        // Clamp indices
-        if self.list_index > 0 && self.list_index > self.lists.len() {
-            self.list_index = self.lists.len();
+        // Clamp indices (no more "All" so max is lists.len() - 1)
+        if !self.lists.is_empty() && self.list_index >= self.lists.len() {
+            self.list_index = self.lists.len() - 1;
         }
         if !self.tasks.is_empty() && self.task_index >= self.tasks.len() {
             self.task_index = self.tasks.len() - 1;
@@ -301,7 +301,14 @@ impl AppState {
             Some(false)
         };
 
-        self.tasks = if let Some(list_id) = self.selected_list_id {
+        // Check if Inbox is selected - if so, show all tasks (like "All" did before)
+        let is_inbox_selected = self.selected_list().map(|l| l.is_inbox).unwrap_or(false);
+
+        self.tasks = if is_inbox_selected {
+            // Inbox shows all tasks from all lists
+            self.db
+                .get_tasks_with_filter(None, completed_filter, None)?
+        } else if let Some(list_id) = self.selected_list_id {
             self.db
                 .get_tasks_with_filter(Some(list_id), completed_filter, None)?
         } else {
@@ -324,11 +331,7 @@ impl AppState {
 
     /// Get the currently selected list
     pub fn selected_list(&self) -> Option<&List> {
-        if self.list_index == 0 {
-            None // "All" is selected
-        } else {
-            self.lists.get(self.list_index - 1)
-        }
+        self.lists.get(self.list_index)
     }
 
     /// Get the currently selected tag
