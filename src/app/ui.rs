@@ -1175,12 +1175,12 @@ fn render_update_banner(frame: &mut Frame, state: &AppState, area: Rect) {
     if let Some(ref latest) = state.update_available {
         let pm = crate::detect_package_manager();
         let banner = Paragraph::new(Line::from(vec![
-            Span::styled("  ⬆️  ", Style::default().fg(Color::Yellow)),
+            Span::styled("  ⬆️  ", Style::default().fg(colors.warning)),
             Span::styled("Update available: ", colors.text()),
             Span::styled(
                 format!("v{}", latest),
                 Style::default()
-                    .fg(Color::Yellow)
+                    .fg(colors.warning)
                     .add_modifier(Modifier::BOLD),
             ),
             Span::styled(" (current: ", colors.text_muted()),
@@ -1199,7 +1199,7 @@ fn render_update_banner(frame: &mut Frame, state: &AppState, area: Rect) {
             Block::default()
                 .borders(Borders::ALL)
                 .border_type(BorderType::Rounded)
-                .border_style(Style::default().fg(Color::Yellow))
+                .border_style(Style::default().fg(colors.warning))
                 .style(Style::default().bg(colors.bg)),
         );
 
