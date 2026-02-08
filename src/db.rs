@@ -42,6 +42,12 @@ impl Database {
         Ok(config_dir.join("tickit.sqlite"))
     }
 
+    /// Execute raw SQL (for PRAGMA statements)
+    pub fn execute_raw(&self, sql: &str) -> Result<()> {
+        self.conn.execute(sql, [])?;
+        Ok(())
+    }
+
     /// Initialize the database schema
     fn init(&self) -> Result<()> {
         self.conn.execute_batch(

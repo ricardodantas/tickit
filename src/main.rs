@@ -133,6 +133,10 @@ enum Commands {
         /// Show sync status instead of syncing
         #[arg(long)]
         status: bool,
+
+        /// Force full sync (ignore last_sync timestamp)
+        #[arg(long)]
+        force: bool,
     },
 }
 
@@ -478,8 +482,8 @@ fn main() -> Result<()> {
             run_update_command();
         }
 
-        Some(Commands::Sync { status }) => {
-            run_sync_command(status)?;
+        Some(Commands::Sync { status, force }) => {
+            run_sync_command(status, force)?;
         }
     }
 
@@ -487,7 +491,7 @@ fn main() -> Result<()> {
 }
 
 /// Run the sync command
-fn run_sync_command(status_only: bool) -> Result<()> {
+fn run_sync_command(status_only: bool, force: bool) -> Result<()> {
     use tickit::{
         Config, Database,
         sync::{SyncClient, SyncRecord},
@@ -532,10 +536,14 @@ fn run_sync_command(status_only: bool) -> Result<()> {
         return Ok(());
     }
 
-    println!("⟳ Syncing...");
+    if force {
+        println!("⟳ Force syncing (ignoring last_sync)...");
+    } else {
+        println!("⟳ Syncing...");
+    }
 
-    // Gather local changes
-    let last_sync = db.get_last_sync()?;
+    // Gather local changes - use None for force sync to get everything
+    let last_sync = if force { None } else { db.get_last_sync()? };
     let mut changes: Vec<SyncRecord> = Vec::new();
 
     // Get all data for full sync, or changes since last sync
@@ -587,27 +595,37 @@ fn run_sync_command(status_only: bool) -> Result<()> {
 
     println!("  Uploading {} changes...", changes.len());
 
-    // Sync
-    match client.sync(changes, last_sync) {
+    // Sync - pass None for force sync to get all changes from server
+    match client.sync(changes, if force { None } else { db.get_last_sync()? }) {
         Ok(response) => {
             println!("  Received {} changes from server", response.changes.len());
 
-            // Apply incoming changes
-            let mut applied = 0;
+            // Sort changes: lists first, then tags, then tasks (to satisfy FK constraints)
+            let mut lists = Vec::new();
+            let mut tags = Vec::new();
+            let mut tasks = Vec::new();
+            let mut deletes = Vec::new();
+
             for record in response.changes {
-                match record {
-                    SyncRecord::Task(task) => {
-                        db.upsert_task(&task)?;
-                        applied += 1;
-                    }
-                    SyncRecord::List(list) => {
-                        db.upsert_list(&list)?;
-                        applied += 1;
-                    }
-                    SyncRecord::Tag(tag) => {
-                        db.upsert_tag(&tag)?;
-                        applied += 1;
-                    }
+                match &record {
+                    SyncRecord::List(_) => lists.push(record),
+                    SyncRecord::Tag(_) => tags.push(record),
+                    SyncRecord::Task(_) => tasks.push(record),
+                    SyncRecord::Deleted { .. } => deletes.push(record),
+                    _ => {}
+                }
+            }
+
+            // Disable FK constraints during sync
+            let _ = db.execute_raw("PRAGMA foreign_keys = OFF");
+
+            // Apply incoming changes in order
+            let mut applied = 0;
+            for record in lists.into_iter().chain(tags).chain(tasks).chain(deletes) {
+                let result = match record {
+                    SyncRecord::Task(task) => db.upsert_task(&task),
+                    SyncRecord::List(list) => db.upsert_list(&list),
+                    SyncRecord::Tag(tag) => db.upsert_tag(&tag),
                     SyncRecord::Deleted {
                         id, record_type, ..
                     } => {
@@ -623,11 +641,17 @@ fn run_sync_command(status_only: bool) -> Result<()> {
                             }
                             _ => {}
                         }
-                        applied += 1;
+                        Ok(())
                     }
-                    _ => {}
+                    _ => Ok(()),
+                };
+                if result.is_ok() {
+                    applied += 1;
                 }
             }
+
+            // Re-enable FK constraints
+            let _ = db.execute_raw("PRAGMA foreign_keys = ON");
 
             // Update last sync time
             db.set_last_sync(response.server_time)?;

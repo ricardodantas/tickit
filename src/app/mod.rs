@@ -268,14 +268,38 @@ fn gather_local_changes(
 fn apply_incoming_changes(db: &Database, response: &SyncResponse) -> usize {
     let mut applied = 0;
 
+    // Sort changes: lists first, then tags, then tasks (to satisfy FK constraints)
+    let mut lists = Vec::new();
+    let mut tags = Vec::new();
+    let mut tasks = Vec::new();
+    let mut task_tags = Vec::new();
+    let mut deletes = Vec::new();
+
     for record in &response.changes {
+        match record {
+            SyncRecord::List(_) => lists.push(record),
+            SyncRecord::Tag(_) => tags.push(record),
+            SyncRecord::Task(_) => tasks.push(record),
+            SyncRecord::TaskTag(_) => task_tags.push(record),
+            SyncRecord::Deleted { .. } => deletes.push(record),
+        }
+    }
+
+    // Disable FK constraints during sync
+    let _ = db.execute_raw("PRAGMA foreign_keys = OFF");
+
+    // Apply in order: lists, tags, tasks, task_tags, deletes
+    for record in lists
+        .iter()
+        .chain(tags.iter())
+        .chain(tasks.iter())
+        .chain(task_tags.iter())
+        .chain(deletes.iter())
+    {
         let result = match record {
             SyncRecord::Task(task) => db.upsert_task(task),
             SyncRecord::List(list) => db.upsert_list(list),
-            SyncRecord::Tag(tag) => {
-                // Tags don't have updated_at, so just insert/replace
-                db.upsert_tag(tag)
-            }
+            SyncRecord::Tag(tag) => db.upsert_tag(tag),
             SyncRecord::TaskTag(link) => db.upsert_task_tag(link),
             SyncRecord::Deleted {
                 id, record_type, ..
@@ -293,6 +317,9 @@ fn apply_incoming_changes(db: &Database, response: &SyncResponse) -> usize {
             applied += 1;
         }
     }
+
+    // Re-enable FK constraints
+    let _ = db.execute_raw("PRAGMA foreign_keys = ON");
 
     applied
 }
