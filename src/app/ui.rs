@@ -16,10 +16,10 @@ use crate::theme::Theme;
 const LOGO: &str = r#"
 ████████╗██╗ ██████╗██╗  ██╗██╗████████╗
 ╚══██╔══╝██║██╔════╝██║ ██╔╝██║╚══██╔══╝
-   ██║   ██║██║     █████╔╝ ██║   ██║   
-   ██║   ██║██║     ██╔═██╗ ██║   ██║   
-   ██║   ██║╚██████╗██║  ██╗██║   ██║   
-   ╚═╝   ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝   ╚═╝   
+   ██║   ██║██║     █████╔╝ ██║   ██║
+   ██║   ██║██║     ██╔═██╗ ██║   ██║
+   ██║   ██║╚██████╗██║  ██╗██║   ██║
+   ╚═╝   ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝   ╚═╝
 "#;
 
 /// Tickit icon
@@ -365,7 +365,7 @@ fn render_tags_view(frame: &mut Frame, state: &AppState, area: Rect) {
 
     let content = if tag_items.is_empty() {
         List::new(vec![ListItem::new(Span::styled(
-            "  No tags yet. Press 'a' to add one.",
+            "  No tags yet. Press 'n' to add one.",
             colors.text_muted(),
         ))])
     } else {
