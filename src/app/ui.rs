@@ -60,6 +60,14 @@ pub fn render(frame: &mut Frame, state: &AppState) {
         render_confirm_dialog(frame, state);
     }
 
+    if state.mode == Mode::UpdateConfirm {
+        render_update_confirm_dialog(frame, state);
+    }
+
+    if state.mode == Mode::Updating {
+        render_updating_overlay(frame, state);
+    }
+
     if matches!(state.mode, Mode::AddTask | Mode::EditTask) {
         render_task_editor(frame, state);
     }
@@ -1140,4 +1148,105 @@ fn parse_hex_color(hex: &str) -> Option<Color> {
     let g = u8::from_str_radix(&hex[2..4], 16).ok()?;
     let b = u8::from_str_radix(&hex[4..6], 16).ok()?;
     Some(Color::Rgb(r, g, b))
+}
+
+fn render_update_confirm_dialog(frame: &mut Frame, state: &AppState) {
+    let colors = state.theme.colors();
+    let area = frame.area();
+
+    let popup_width = 50u16;
+    let popup_height = 9u16;
+    let popup_area = Rect {
+        x: area.width.saturating_sub(popup_width) / 2,
+        y: area.height.saturating_sub(popup_height) / 2,
+        width: popup_width.min(area.width),
+        height: popup_height.min(area.height),
+    };
+
+    frame.render_widget(Clear, popup_area);
+
+    let latest = state.update_available.as_deref().unwrap_or("unknown");
+    let pm = crate::detect_package_manager();
+
+    let lines = vec![
+        Line::from(""),
+        Line::from(vec![
+            Span::styled("Update to ", colors.text()),
+            Span::styled(
+                format!("v{}", latest),
+                Style::default()
+                    .fg(Color::Yellow)
+                    .add_modifier(Modifier::BOLD),
+            ),
+            Span::styled("?", colors.text()),
+        ]),
+        Line::from(""),
+        Line::from(vec![
+            Span::styled("Command: ", colors.text_muted()),
+            Span::styled(pm.update_command(), Style::default().fg(colors.primary)),
+        ]),
+        Line::from(""),
+        Line::from(""),
+        Line::from(vec![
+            Span::styled(
+                " [Y] ",
+                Style::default()
+                    .fg(Color::Green)
+                    .add_modifier(Modifier::BOLD),
+            ),
+            Span::raw("Yes, update"),
+            Span::raw("    "),
+            Span::styled(" [N/Esc] ", colors.text_muted()),
+            Span::raw("Cancel"),
+        ]),
+    ];
+
+    let paragraph = Paragraph::new(lines).alignment(Alignment::Center).block(
+        Block::default()
+            .borders(Borders::ALL)
+            .border_type(BorderType::Rounded)
+            .border_style(Style::default().fg(Color::Yellow))
+            .style(Style::default().bg(colors.bg))
+            .title(" ⬆️ Update Tickit ")
+            .title_style(
+                Style::default()
+                    .fg(Color::Yellow)
+                    .add_modifier(Modifier::BOLD),
+            ),
+    );
+
+    frame.render_widget(paragraph, popup_area);
+}
+
+fn render_updating_overlay(frame: &mut Frame, state: &AppState) {
+    let colors = state.theme.colors();
+    let area = frame.area();
+
+    let popup_width = 40u16;
+    let popup_height = 5u16;
+    let popup_area = Rect {
+        x: area.width.saturating_sub(popup_width) / 2,
+        y: area.height.saturating_sub(popup_height) / 2,
+        width: popup_width.min(area.width),
+        height: popup_height.min(area.height),
+    };
+
+    frame.render_widget(Clear, popup_area);
+
+    let msg = state.update_result.as_deref().unwrap_or("Updating...");
+
+    let paragraph = Paragraph::new(vec![
+        Line::from(""),
+        Line::from(Span::styled(msg, colors.text())),
+    ])
+    .alignment(Alignment::Center)
+    .block(
+        Block::default()
+            .borders(Borders::ALL)
+            .border_type(BorderType::Rounded)
+            .border_style(Style::default().fg(Color::Yellow))
+            .style(Style::default().bg(colors.bg)),
+    );
+
+    frame.render_widget(paragraph, popup_area);
 }

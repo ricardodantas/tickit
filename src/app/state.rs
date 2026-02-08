@@ -37,6 +37,10 @@ pub enum Mode {
     Export,
     /// About dialog
     About,
+    /// Update confirmation dialog
+    UpdateConfirm,
+    /// Update in progress
+    Updating,
 }
 
 /// Current view/tab

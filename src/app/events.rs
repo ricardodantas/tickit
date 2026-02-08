@@ -24,6 +24,14 @@ pub fn handle_key(state: &mut AppState, key: KeyEvent) {
             handle_about(state, key);
             return;
         }
+        Mode::UpdateConfirm => {
+            handle_update_confirm_key(state, key);
+            return;
+        }
+        Mode::Updating => {
+            // No input during update
+            return;
+        }
         Mode::AddTask | Mode::EditTask => {
             handle_task_editor(state, key);
             return;
@@ -609,10 +617,25 @@ fn handle_about(state: &mut AppState, key: KeyEvent) {
             let _ = open::that("https://github.com/ricardodantas/tickit");
         }
         // Handle update from about dialog
-        KeyCode::Char('u') => {
+        KeyCode::Char('u') | KeyCode::Char('U') => {
             if state.update_available.is_some() {
-                state.start_update();
+                state.mode = Mode::UpdateConfirm;
             }
+        }
+        _ => {}
+    }
+}
+
+fn handle_update_confirm_key(state: &mut AppState, key: KeyEvent) {
+    match key.code {
+        KeyCode::Esc | KeyCode::Char('n') | KeyCode::Char('N') => {
+            state.mode = Mode::Normal;
+        }
+        KeyCode::Enter | KeyCode::Char('y') | KeyCode::Char('Y') => {
+            // Set updating mode and flag
+            state.mode = Mode::Updating;
+            state.update_result = Some("Updating... please wait".to_string());
+            state.pending_update = true;
         }
         _ => {}
     }
@@ -623,7 +646,24 @@ pub fn process_pending_update(state: &mut AppState) {
     if !state.pending_update {
         return;
     }
+    state.pending_update = false;
 
+    let pm = crate::detect_package_manager();
+    match crate::run_update(&pm) {
+        Ok(()) => {
+            state.update_result = Some("Update complete! Please restart tickit.".to_string());
+            state.update_available = None;
+        }
+        Err(e) => {
+            state.update_result = Some(format!("Update failed: {}", e));
+        }
+    }
+    state.mode = Mode::Normal;
+}
+
+/// OLD IMPLEMENTATION - keeping for reference but update now goes through UpdateConfirm
+#[allow(dead_code)]
+fn _old_start_update(state: &mut AppState) {
     let pm = crate::detect_package_manager();
     match crate::run_update(&pm) {
         Ok(()) => {
