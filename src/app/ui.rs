@@ -419,20 +419,6 @@ fn render_status_bar(frame: &mut Frame, state: &AppState, area: Rect) {
             Span::styled(" ", Style::default()),
             Span::styled(msg, colors.text_secondary()),
         ]
-    } else if let Some(version) = &state.update_available {
-        // Show update notification
-        vec![
-            Span::styled(" ⬆ ", Style::default().fg(Color::Yellow)),
-            Span::styled(
-                format!("Update available: v{}", version),
-                Style::default().fg(Color::Yellow),
-            ),
-            Span::styled("  Press ", colors.text_muted()),
-            Span::styled("A", colors.key_hint()),
-            Span::styled(" then ", colors.text_muted()),
-            Span::styled("U", colors.key_hint()),
-            Span::styled(" to update", colors.text_muted()),
-        ]
     } else {
         vec![
             Span::styled(" ", Style::default()),
