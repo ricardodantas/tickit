@@ -127,6 +127,13 @@ enum Commands {
 
     /// Check for updates and install if available
     Update,
+
+    /// Manually trigger a sync with the server
+    Sync {
+        /// Show sync status instead of syncing
+        #[arg(long)]
+        status: bool,
+    },
 }
 
 #[derive(Subcommand, Debug)]
@@ -469,6 +476,152 @@ fn main() -> Result<()> {
 
         Some(Commands::Update) => {
             run_update_command();
+        }
+
+        Some(Commands::Sync { status }) => {
+            run_sync_command(status)?;
+        }
+    }
+
+    Ok(())
+}
+
+/// Run the sync command
+fn run_sync_command(status_only: bool) -> Result<()> {
+    use tickit::{Config, Database, sync::{SyncClient, SyncRecord}};
+
+    let config = Config::load()?;
+    let db = Database::open()?;
+
+    if !config.sync.enabled {
+        println!("⚠ Sync is disabled in config.");
+        println!("\nTo enable sync, add to ~/.config/tickit/config.toml:");
+        println!();
+        println!("  [sync]");
+        println!("  enabled = true");
+        println!("  server = \"http://your-server:3030\"");
+        println!("  token = \"your-token\"");
+        return Ok(());
+    }
+
+    if config.sync.server.is_none() || config.sync.token.is_none() {
+        println!("⚠ Sync is enabled but not configured.");
+        println!("\nMissing server and/or token in config.");
+        return Ok(());
+    }
+
+    let mut client = SyncClient::new(config.sync.clone());
+
+    if status_only {
+        let last_sync = db.get_last_sync()?;
+        println!("Sync Status:");
+        println!("  Server: {}", config.sync.server.as_deref().unwrap_or("not set"));
+        println!("  Enabled: {}", config.sync.enabled);
+        println!("  Last sync: {}", last_sync.map(|t| t.to_string()).unwrap_or_else(|| "never".to_string()));
+        return Ok(());
+    }
+
+    println!("⟳ Syncing...");
+
+    // Gather local changes
+    let last_sync = db.get_last_sync()?;
+    let mut changes: Vec<SyncRecord> = Vec::new();
+
+    // Get all data for full sync, or changes since last sync
+    let tasks = if let Some(since) = last_sync {
+        db.get_tasks_since(since)?
+    } else {
+        db.get_all_tasks()?
+    };
+    for task in tasks {
+        changes.push(SyncRecord::Task(task));
+    }
+
+    let lists = if let Some(since) = last_sync {
+        db.get_lists_since(since)?
+    } else {
+        db.get_lists()?
+    };
+    for list in lists {
+        changes.push(SyncRecord::List(list));
+    }
+
+    let tags = if let Some(since) = last_sync {
+        db.get_tags_since(since)?
+    } else {
+        db.get_tags()?
+    };
+    for tag in tags {
+        changes.push(SyncRecord::Tag(tag));
+    }
+
+    // Get tombstones
+    if let Some(since) = last_sync {
+        let tombstones = db.get_tombstones_since(since)?;
+        for tomb in tombstones {
+            let record_type = match tomb.1.as_str() {
+                "task" => tickit::sync::RecordType::Task,
+                "list" => tickit::sync::RecordType::List,
+                "tag" => tickit::sync::RecordType::Tag,
+                "task_tag" => tickit::sync::RecordType::TaskTag,
+                _ => continue,
+            };
+            changes.push(SyncRecord::Deleted {
+                id: tomb.0,
+                record_type,
+                deleted_at: tomb.2,
+            });
+        }
+    }
+
+    println!("  Uploading {} changes...", changes.len());
+
+    // Sync
+    match client.sync(changes, last_sync) {
+        Ok(response) => {
+            println!("  Received {} changes from server", response.changes.len());
+
+            // Apply incoming changes
+            let mut applied = 0;
+            for record in response.changes {
+                match record {
+                    SyncRecord::Task(task) => {
+                        db.upsert_task(&task)?;
+                        applied += 1;
+                    }
+                    SyncRecord::List(list) => {
+                        db.upsert_list(&list)?;
+                        applied += 1;
+                    }
+                    SyncRecord::Tag(tag) => {
+                        db.upsert_tag(&tag)?;
+                        applied += 1;
+                    }
+                    SyncRecord::Deleted { id, record_type, .. } => {
+                        match record_type {
+                            tickit::sync::RecordType::Task => { let _ = db.delete_task(id); }
+                            tickit::sync::RecordType::List => { let _ = db.delete_list(id); }
+                            tickit::sync::RecordType::Tag => { let _ = db.delete_tag(id); }
+                            _ => {}
+                        }
+                        applied += 1;
+                    }
+                    _ => {}
+                }
+            }
+
+            // Update last sync time
+            db.set_last_sync(response.server_time)?;
+
+            if !response.conflicts.is_empty() {
+                println!("  ⚠ {} conflicts (server won)", response.conflicts.len());
+            }
+
+            println!("✓ Sync complete! Applied {} changes.", applied);
+        }
+        Err(e) => {
+            println!("✗ Sync failed: {}", e);
+            std::process::exit(1);
         }
     }
 

@@ -91,13 +91,16 @@ impl SyncClient {
             .send_json(request)
             .context("Failed to connect to sync server")?;
 
-        if response.status() != 200 {
-            anyhow::bail!("Sync failed with status: {}", response.status());
+        let status = response.status();
+        let body = response.into_string().context("Failed to read response body")?;
+
+        if status != 200 {
+            anyhow::bail!("Sync failed with status {}: {}", status, body);
         }
 
-        response
-            .into_json::<SyncResponse>()
-            .context("Failed to parse sync response")
+        serde_json::from_str(&body).with_context(|| {
+            format!("Failed to parse sync response: {}", &body[..body.len().min(500)])
+        })
     }
 
     /// Get or create a persistent device ID

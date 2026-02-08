@@ -4,6 +4,52 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+/// Custom deserializer for due_date that handles both date-only and full timestamp formats
+mod date_or_datetime {
+    use chrono::{DateTime, NaiveDate, Utc};
+    use serde::{self, Deserialize, Deserializer, Serializer};
+
+    pub fn serialize<S>(date: &Option<DateTime<Utc>>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match date {
+            Some(dt) => serializer.serialize_some(&dt.to_rfc3339()),
+            None => serializer.serialize_none(),
+        }
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Option<DateTime<Utc>>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let opt: Option<String> = Option::deserialize(deserializer)?;
+        match opt {
+            None => Ok(None),
+            Some(s) if s.is_empty() => Ok(None),
+            Some(s) => {
+                // Try full datetime first
+                if let Ok(dt) = DateTime::parse_from_rfc3339(&s) {
+                    return Ok(Some(dt.with_timezone(&Utc)));
+                }
+                // Try date-only format (YYYY-MM-DD)
+                if let Ok(date) = NaiveDate::parse_from_str(&s, "%Y-%m-%d") {
+                    let dt = date.and_hms_opt(23, 59, 59).unwrap().and_utc();
+                    return Ok(Some(dt));
+                }
+                // Try other common formats
+                if let Ok(dt) = s.parse::<DateTime<Utc>>() {
+                    return Ok(Some(dt));
+                }
+                Err(serde::de::Error::custom(format!(
+                    "invalid date format: {}",
+                    s
+                )))
+            }
+        }
+    }
+}
+
 /// Priority level for tasks
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -98,6 +144,7 @@ pub struct Task {
     /// Completion timestamp (if completed)
     pub completed_at: Option<DateTime<Utc>>,
     /// Optional due date
+    #[serde(default, with = "date_or_datetime")]
     pub due_date: Option<DateTime<Utc>>,
 }
 
