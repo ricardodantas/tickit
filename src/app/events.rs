@@ -134,6 +134,13 @@ pub fn handle_key(state: &mut AppState, key: KeyEvent) {
             state.mode = Mode::About;
             return;
         }
+        // Update (when available)
+        (_, KeyCode::Char('u')) | (_, KeyCode::Char('U')) => {
+            if state.update_available.is_some() {
+                state.mode = Mode::UpdateConfirm;
+            }
+            return;
+        }
         _ => {}
     }
 
