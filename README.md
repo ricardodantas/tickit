@@ -87,6 +87,7 @@ Export to JSON, todo.txt, Markdown, or CSV formats.
 | ⚡ **Priority Levels** | Low, Medium, High, Urgent |
 | 🔗 **Task URLs** | Attach links and open them with `o` |
 | 🎨 **15 Built-in Themes** | From Dracula to Cyberpunk |
+| ⚙️ **Settings Dialog** | Configure sync, notifications, and themes in-app |
 | 💾 **SQLite Storage** | Fast, reliable, self-contained |
 | 🔍 **Filter & Search** | By list, tag, or completion status |
 | ✅ **Toggle Completed** | Show/hide completed tasks |
@@ -251,10 +252,11 @@ The update command automatically detects whether you installed via Cargo or Home
 | `Tab` | Next view |
 | `Shift+Tab` | Previous view |
 | `1` `2` `3` | Jump to view (Tasks, Lists, Tags) |
+| `s` | Open settings |
 | `t` | Open theme picker |
 | `A` | About Tickit |
 | `?` / `F1` | Show help |
-| `Ctrl+s` | Sync with server (if configured) |
+| `S` / `Ctrl+s` | Sync with server (if configured) |
 | `q` | Quit |
 | `Ctrl+c` / `Ctrl+q` | Force quit |
 
@@ -479,14 +481,17 @@ Tickit can sync your tasks across multiple devices using a self-hosted sync serv
    interval_secs = 300  # auto-sync every 5 minutes
    ```
 
-4. **Manual sync:** Press `Ctrl+S` in the TUI
+4. **Manual sync:** Press `S` (Shift+S) or `Ctrl+S` in the TUI
+
+5. **Or configure in-app:** Press `s` to open Settings and toggle sync options
 
 ### Sync Features
 
 - **Self-hosted**: Run on your own server, keep your data private
-- **Multi-device**: Sync between desktop, laptop, and (future) mobile
+- **Multi-device**: Sync between desktop, laptop, and mobile (tickit-mobile)
 - **Conflict resolution**: Last-write-wins with conflict detection
 - **Offline-first**: Changes sync when connection is available
+- **In-app settings**: Toggle sync, adjust interval from the Settings dialog
 
 <br>
 
