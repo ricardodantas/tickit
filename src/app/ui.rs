@@ -458,13 +458,25 @@ fn render_status_bar(frame: &mut Frame, state: &AppState, area: Rect) {
     // Render sync indicator separately (only this part updates during sync)
     if state.is_sync_enabled() {
         let sync_indicator = if state.sync_status.syncing {
-            Span::styled(" ↻ Syncing... ", Style::default().fg(Color::Cyan).bg(colors.bg_secondary))
+            Span::styled(
+                " ↻ Syncing... ",
+                Style::default().fg(Color::Cyan).bg(colors.bg_secondary),
+            )
         } else if state.sync_status.last_error.is_some() {
-            Span::styled(" ⚠ Sync Error ", Style::default().fg(Color::Red).bg(colors.bg_secondary))
+            Span::styled(
+                " ⚠ Sync Error ",
+                Style::default().fg(Color::Red).bg(colors.bg_secondary),
+            )
         } else if state.sync_status.last_sync.is_some() {
-            Span::styled(" ☁ Synced ", Style::default().fg(Color::Green).bg(colors.bg_secondary))
+            Span::styled(
+                " ☁ Synced ",
+                Style::default().fg(Color::Green).bg(colors.bg_secondary),
+            )
         } else {
-            Span::styled(" S: sync ", Style::default().fg(colors.fg_muted).bg(colors.bg_secondary))
+            Span::styled(
+                " S: sync ",
+                Style::default().fg(colors.fg_muted).bg(colors.bg_secondary),
+            )
         };
 
         let sync_widget = Paragraph::new(Line::from(vec![sync_indicator]))
