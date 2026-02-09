@@ -46,6 +46,13 @@ Sleep 800ms
 Screenshot screenshots/03-tags.png
 Sleep 300ms
 
+# Open settings
+Type "s"
+Sleep 800ms
+Screenshot screenshots/08-settings.png
+Escape
+Sleep 500ms
+
 # Open theme picker
 Type "t"
 Sleep 800ms

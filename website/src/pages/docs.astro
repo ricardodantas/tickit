@@ -31,6 +31,7 @@ const baseUrl = import.meta.env.BASE_URL;
           <li><a href="#tui-overview">Overview</a></li>
           <li><a href="#tui-navigation">Navigation</a></li>
           <li><a href="#tui-task-editor">Task Editor</a></li>
+          <li><a href="#tui-settings">Settings Dialog</a></li>
           <li><a href="#keyboard-shortcuts">Keyboard Shortcuts</a></li>
         </ul>
 
@@ -592,6 +593,100 @@ tickit export --format todotxt > todo.txt</code></pre>
         </ul>
       </section>
 
+      <section id="tui-settings">
+        <h2>Settings Dialog</h2>
+
+        <p>Press <kbd>s</kbd> to open the Settings dialog where you can configure Tickit without editing config files.</p>
+
+        <h3>Available Settings</h3>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Setting</th>
+                <th>Description</th>
+                <th>Control</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>🎨 Theme</td>
+                <td>Select color theme</td>
+                <td><kbd>Enter</kbd> opens picker, <kbd>←</kbd>/<kbd>→</kbd> cycles</td>
+              </tr>
+              <tr>
+                <td>🔄 Sync Enabled</td>
+                <td>Enable/disable sync</td>
+                <td><kbd>Enter</kbd> or <kbd>Space</kbd> to toggle</td>
+              </tr>
+              <tr>
+                <td>🌐 Sync Server</td>
+                <td>Server URL (read-only)</td>
+                <td>Edit config file to change</td>
+              </tr>
+              <tr>
+                <td>🔑 Sync Token</td>
+                <td>API token (read-only)</td>
+                <td>Edit config file to change</td>
+              </tr>
+              <tr>
+                <td>⏱️ Sync Interval</td>
+                <td>Auto-sync frequency</td>
+                <td><kbd>Enter</kbd> cycles presets, <kbd>←</kbd>/<kbd>→</kbd> adjusts ±60s</td>
+              </tr>
+              <tr>
+                <td>🔔 Notifications</td>
+                <td>Desktop notifications</td>
+                <td><kbd>Enter</kbd> or <kbd>Space</kbd> to toggle</td>
+              </tr>
+              <tr>
+                <td>✓ Show Completed</td>
+                <td>Default visibility</td>
+                <td><kbd>Enter</kbd> or <kbd>Space</kbd> to toggle</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Settings Navigation</h3>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Key</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><kbd>j</kbd> / <kbd>↓</kbd></td>
+                <td>Move down</td>
+              </tr>
+              <tr>
+                <td><kbd>k</kbd> / <kbd>↑</kbd></td>
+                <td>Move up</td>
+              </tr>
+              <tr>
+                <td><kbd>Enter</kbd> / <kbd>Space</kbd></td>
+                <td>Toggle or activate setting</td>
+              </tr>
+              <tr>
+                <td><kbd>←</kbd> / <kbd>→</kbd></td>
+                <td>Adjust value (theme, interval)</td>
+              </tr>
+              <tr>
+                <td><kbd>Esc</kbd></td>
+                <td>Close settings</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="callout info">
+          <strong>💡 Tip:</strong> Changes are saved immediately. Sync interval presets: Manual only, 15s, 30s, 60s, 5min, 10min, 30min.
+        </div>
+      </section>
+
       <section id="keyboard-shortcuts">
         <h2>Keyboard Shortcuts</h2>
 
@@ -690,6 +785,10 @@ tickit export --format todotxt > todo.txt</code></pre>
             </thead>
             <tbody>
               <tr>
+                <td><kbd>s</kbd></td>
+                <td>Open settings</td>
+              </tr>
+              <tr>
                 <td><kbd>t</kbd></td>
                 <td>Open theme picker</td>
               </tr>
@@ -706,7 +805,7 @@ tickit export --format todotxt > todo.txt</code></pre>
                 <td>About dialog</td>
               </tr>
               <tr>
-                <td><kbd>Ctrl</kbd>+<kbd>s</kbd></td>
+                <td><kbd>S</kbd> / <kbd>Ctrl</kbd>+<kbd>s</kbd></td>
                 <td>Sync with server (if configured)</td>
               </tr>
               <tr>
@@ -1007,7 +1106,7 @@ interval_secs = 300  # Sync every 5 minutes`}</code></pre>
             </thead>
             <tbody>
               <tr>
-                <td><kbd>Ctrl</kbd>+<kbd>s</kbd></td>
+                <td><kbd>S</kbd> / <kbd>Ctrl</kbd>+<kbd>s</kbd></td>
                 <td>Trigger manual sync</td>
               </tr>
             </tbody>
@@ -1016,13 +1115,13 @@ interval_secs = 300  # Sync every 5 minutes`}</code></pre>
 
         <h3>Sync Status</h3>
 
-        <p>The status bar shows the current sync state:</p>
+        <p>The sync indicator on the right side of the status bar shows the current sync state:</p>
 
         <ul>
           <li><strong>↻ Syncing...</strong> — Sync in progress</li>
           <li><strong>☁ Synced</strong> — Last sync successful</li>
-          <li><strong>⚠ Sync: error</strong> — Sync failed (hover for details)</li>
-          <li><strong>Ctrl+S: sync</strong> — Sync configured but not yet synced</li>
+          <li><strong>⚠ Sync Error</strong> — Sync failed</li>
+          <li><strong>S: sync</strong> — Sync configured but not yet synced</li>
         </ul>
 
         <div class="callout warning">
