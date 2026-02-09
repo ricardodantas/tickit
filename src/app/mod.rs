@@ -161,7 +161,7 @@ fn run_app(
 
             let config = state.config.sync.clone();
             let last_sync = state.db.get_last_sync().ok().flatten();
-            
+
             // Capture local time BEFORE gathering changes.
             // This ensures any changes made during or after sync will be picked up next time,
             // regardless of clock skew between client and server.
