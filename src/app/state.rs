@@ -71,6 +71,8 @@ pub enum Mode {
     Help,
     /// Settings dialog
     Settings,
+    /// Settings text input (for server/token)
+    SettingsInput,
     /// Adding a new task
     AddTask,
     /// Editing a task
@@ -193,6 +195,8 @@ pub struct AppState {
     pub theme_index: usize,
     /// Settings menu index
     pub settings_index: usize,
+    /// Which settings item is being edited (for text input)
+    pub settings_editing: Option<SettingsItem>,
 
     // Editor state
     /// Current editor field
@@ -288,6 +292,7 @@ impl AppState {
             tag_index: 0,
             theme_index: 0,
             settings_index: 0,
+            settings_editing: None,
             editor_field: EditorField::Title,
             input_buffer: String::new(),
             cursor_pos: 0,

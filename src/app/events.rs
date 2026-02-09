@@ -24,6 +24,10 @@ pub fn handle_key(state: &mut AppState, key: KeyEvent) {
             handle_settings(state, key);
             return;
         }
+        Mode::SettingsInput => {
+            handle_settings_input(state, key);
+            return;
+        }
         Mode::About => {
             handle_about(state, key);
             return;
@@ -413,6 +417,89 @@ fn handle_settings(state: &mut AppState, key: KeyEvent) {
     }
 }
 
+fn handle_settings_input(state: &mut AppState, key: KeyEvent) {
+    match key.code {
+        KeyCode::Esc => {
+            // Cancel and return to settings
+            state.input_buffer.clear();
+            state.settings_editing = None;
+            state.mode = Mode::Settings;
+        }
+        KeyCode::Enter => {
+            // Save the value
+            if let Some(item) = state.settings_editing {
+                let value = state.input_buffer.trim().to_string();
+                match item {
+                    SettingsItem::SyncServer => {
+                        state.config.sync.server = if value.is_empty() {
+                            None
+                        } else {
+                            Some(value.clone())
+                        };
+                        let _ = state.config.save();
+                        state.set_status(format!(
+                            "Sync server: {}",
+                            if value.is_empty() {
+                                "not set".to_string()
+                            } else {
+                                value
+                            }
+                        ));
+                    }
+                    SettingsItem::SyncToken => {
+                        state.config.sync.token = if value.is_empty() {
+                            None
+                        } else {
+                            Some(value.clone())
+                        };
+                        let _ = state.config.save();
+                        state.set_status(format!(
+                            "Sync token: {}",
+                            if value.is_empty() {
+                                "not set"
+                            } else {
+                                "configured"
+                            }
+                        ));
+                    }
+                    _ => {}
+                }
+            }
+            state.input_buffer.clear();
+            state.settings_editing = None;
+            state.mode = Mode::Settings;
+        }
+        KeyCode::Backspace => {
+            if state.cursor_pos > 0 {
+                state.input_buffer.remove(state.cursor_pos - 1);
+                state.cursor_pos -= 1;
+            }
+        }
+        KeyCode::Delete => {
+            if state.cursor_pos < state.input_buffer.len() {
+                state.input_buffer.remove(state.cursor_pos);
+            }
+        }
+        KeyCode::Left => {
+            state.cursor_pos = state.cursor_pos.saturating_sub(1);
+        }
+        KeyCode::Right => {
+            state.cursor_pos = (state.cursor_pos + 1).min(state.input_buffer.len());
+        }
+        KeyCode::Home => {
+            state.cursor_pos = 0;
+        }
+        KeyCode::End => {
+            state.cursor_pos = state.input_buffer.len();
+        }
+        KeyCode::Char(c) => {
+            state.input_buffer.insert(state.cursor_pos, c);
+            state.cursor_pos += 1;
+        }
+        _ => {}
+    }
+}
+
 fn toggle_settings_item(state: &mut AppState) {
     let item = SettingsItem::all()[state.settings_index];
     match item {
@@ -456,8 +543,19 @@ fn toggle_settings_item(state: &mut AppState) {
             };
             state.set_status(format!("Completed tasks {} by default", status));
         }
-        SettingsItem::SyncServer | SettingsItem::SyncToken => {
-            state.set_status("Edit config file to change this value");
+        SettingsItem::SyncServer => {
+            // Enter text input mode for server URL
+            state.input_buffer = state.config.sync.server.clone().unwrap_or_default();
+            state.cursor_pos = state.input_buffer.len();
+            state.settings_editing = Some(SettingsItem::SyncServer);
+            state.mode = Mode::SettingsInput;
+        }
+        SettingsItem::SyncToken => {
+            // Enter text input mode for token
+            state.input_buffer = state.config.sync.token.clone().unwrap_or_default();
+            state.cursor_pos = state.input_buffer.len();
+            state.settings_editing = Some(SettingsItem::SyncToken);
+            state.mode = Mode::SettingsInput;
         }
         SettingsItem::SyncInterval => {
             // Toggle through common intervals: 0 (manual), 60, 300, 600

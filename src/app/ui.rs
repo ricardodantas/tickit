@@ -75,7 +75,7 @@ pub fn render(frame: &mut Frame, state: &AppState) {
         render_theme_picker(frame, state);
     }
 
-    if state.mode == Mode::Settings {
+    if state.mode == Mode::Settings || state.mode == Mode::SettingsInput {
         render_settings_dialog(frame, state);
     }
 
@@ -699,6 +699,8 @@ fn render_settings_dialog(frame: &mut Frame, state: &AppState) {
     frame.render_widget(Clear, popup_area);
 
     let items = SettingsItem::all();
+    let is_editing = state.mode == Mode::SettingsInput;
+
     let list_items: Vec<ListItem> = items
         .iter()
         .enumerate()
@@ -706,7 +708,12 @@ fn render_settings_dialog(frame: &mut Frame, state: &AppState) {
             let selected = i == state.settings_index;
             let cursor = if selected { "▸" } else { " " };
 
-            let value_str = get_settings_value_display(state, *item);
+            // If we're editing this item, show the input buffer
+            let value_str = if is_editing && state.settings_editing == Some(*item) {
+                format!("{}▏", state.input_buffer)
+            } else {
+                get_settings_value_display(state, *item)
+            };
 
             let style = if selected {
                 colors.selected().add_modifier(Modifier::BOLD)
@@ -714,7 +721,13 @@ fn render_settings_dialog(frame: &mut Frame, state: &AppState) {
                 colors.text()
             };
 
-            let value_style = colors.text_muted();
+            let value_style = if is_editing && state.settings_editing == Some(*item) {
+                Style::default()
+                    .fg(colors.accent)
+                    .add_modifier(Modifier::BOLD)
+            } else {
+                colors.text_muted()
+            };
 
             ListItem::new(Line::from(vec![
                 Span::styled(format!(" {} ", cursor), style),
@@ -724,6 +737,12 @@ fn render_settings_dialog(frame: &mut Frame, state: &AppState) {
             ]))
         })
         .collect();
+
+    let footer_text = if is_editing {
+        " Type to edit │ ↵ save │ Esc cancel "
+    } else {
+        " ↑↓ navigate │ ↵/␣ toggle │ ←→ adjust │ Esc close "
+    };
 
     let settings_list = List::new(list_items).block(
         Block::default()
@@ -736,9 +755,7 @@ fn render_settings_dialog(frame: &mut Frame, state: &AppState) {
                 state.settings_index + 1,
                 items.len()
             ))
-            .title_bottom(
-                Line::from(" ↑↓ navigate │ ↵/␣ toggle │ ←→ adjust │ Esc close ").centered(),
-            ),
+            .title_bottom(Line::from(footer_text).centered()),
     );
 
     frame.render_widget(settings_list, popup_area);
