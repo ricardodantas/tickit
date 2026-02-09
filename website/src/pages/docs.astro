@@ -1003,31 +1003,47 @@ notifications = true`}</code></pre>
 
         <h3>Generate API Token</h3>
 
-        <p>Each device needs its own API token:</p>
+        <p>Each device needs its own API token. The token is automatically saved to the server config (hashed with Argon2):</p>
 
         <div class="code-block">
           <div class="code-header">
             <span>Generate token</span>
-            <button class="copy-btn" data-copy='tickit-sync token --name "my-laptop"'>Copy</button>
+            <button class="copy-btn" data-copy='docker exec tickit-sync tickit-sync token --name "my-laptop"'>Copy</button>
           </div>
           <pre><code># In Docker/Podman
 docker exec tickit-sync tickit-sync token --name "my-laptop"
 
 # Or if installed locally
-tickit-sync token --name "my-laptop"
-
-# Output: Generated token for 'my-laptop': tks_abc123...</code></pre>
+tickit-sync token --name "my-laptop"</code></pre>
         </div>
 
-        <p>Add the generated token to your server's <code>config.toml</code>:</p>
+        <p>The command outputs the token and setup instructions:</p>
 
         <div class="code-block">
           <div class="code-header">
-            <span>/data/config.toml (in container)</span>
+            <span>Example output</span>
           </div>
-          <pre><code>{`[[tokens]]
-name = "my-laptop"
-token = "tks_abc123..."`}</code></pre>
+          <pre><code>{`✅ Generated API token for 'my-laptop'
+
+Token: tks_abc123...
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📱 MOBILE APP (tickit-mobile):
+   Settings → Sync Server: http://YOUR_SERVER_IP:3030
+   Settings → Sync Token: tks_abc123...
+   Settings → Sync Enabled: ON
+
+💻 DESKTOP CLI (tickit):
+   Press 's' to open Settings, then configure:
+   • Sync Server: http://YOUR_SERVER_IP:3030
+   • Sync Token: tks_abc123...
+   • Sync Enabled: ON
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚠️  Save this token now - it cannot be retrieved later!`}</code></pre>
+        </div>
+
+        <div class="callout info">
+          <strong>💡 Security:</strong> Tokens are hashed with Argon2 before storage. The plaintext token is only shown once when generated — save it immediately!
         </div>
 
         <div class="callout info">
@@ -1038,7 +1054,19 @@ token = "tks_abc123..."`}</code></pre>
       <section id="sync-config">
         <h2>Client Configuration</h2>
 
-        <p>Configure Tickit to connect to your sync server by editing <code>~/.config/tickit/config.toml</code>:</p>
+        <p>Configure sync using the Settings dialog (press <kbd>s</kbd>) or manually edit <code>~/.config/tickit/config.toml</code>:</p>
+
+        <h3>Using Settings Dialog (Recommended)</h3>
+
+        <ol>
+          <li>Press <kbd>s</kbd> to open Settings</li>
+          <li>Navigate to <strong>Sync Server</strong>, press <kbd>Enter</kbd>, type your server URL</li>
+          <li>Navigate to <strong>Sync Token</strong>, press <kbd>Enter</kbd>, paste your token</li>
+          <li>Navigate to <strong>Sync Enabled</strong>, press <kbd>Enter</kbd> to enable</li>
+          <li>Optionally adjust <strong>Sync Interval</strong></li>
+        </ol>
+
+        <h3>Manual Configuration</h3>
 
         <div class="code-block">
           <div class="code-header">
