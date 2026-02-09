@@ -121,12 +121,6 @@ pub fn handle_key(state: &mut AppState, key: KeyEvent) {
             state.mode = Mode::ThemePicker;
             return;
         }
-        // Settings dialog (s like Hazelnut)
-        (_, KeyCode::Char('s')) => {
-            state.settings_index = 0;
-            state.mode = Mode::Settings;
-            return;
-        }
         // Manual sync (Ctrl+S or Shift+S)
         (KeyModifiers::CONTROL, KeyCode::Char('s')) | (_, KeyCode::Char('S')) => {
             if state.is_sync_enabled() {
@@ -136,6 +130,12 @@ pub fn handle_key(state: &mut AppState, key: KeyEvent) {
             } else {
                 state.set_status("Sync not configured");
             }
+            return;
+        }
+        // Settings dialog (s like Hazelnut)
+        (_, KeyCode::Char('s')) => {
+            state.settings_index = 0;
+            state.mode = Mode::Settings;
             return;
         }
         // About dialog (A like Hazelnut)
