@@ -161,6 +161,11 @@ fn run_app(
 
             let config = state.config.sync.clone();
             let last_sync = state.db.get_last_sync().ok().flatten();
+            
+            // Capture local time BEFORE gathering changes.
+            // This ensures any changes made during or after sync will be picked up next time,
+            // regardless of clock skew between client and server.
+            let local_sync_time = chrono::Utc::now();
 
             // Gather local changes
             let changes = gather_local_changes(&state.db, last_sync);
@@ -170,7 +175,14 @@ fn run_app(
                 let mut client = SyncClient::new(config);
                 let result = client.sync(changes, last_sync);
                 let msg = match result {
-                    Ok(response) => BackgroundMsg::SyncComplete(Ok(response)),
+                    Ok(mut response) => {
+                        // Use the EARLIER of local sync time and server time to avoid missing
+                        // changes due to clock skew.
+                        if local_sync_time < response.server_time {
+                            response.server_time = local_sync_time;
+                        }
+                        BackgroundMsg::SyncComplete(Ok(response))
+                    }
                     Err(e) => BackgroundMsg::SyncComplete(Err(e.to_string())),
                 };
                 let _ = tx.send(msg);
