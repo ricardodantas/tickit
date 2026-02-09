@@ -89,7 +89,7 @@ impl SyncClient {
             .set("Content-Type", "application/json")
             .timeout(std::time::Duration::from_secs(30))
             .send_json(request)
-            .context("Failed to connect to sync server")?;
+            .map_err(|e| anyhow::anyhow!("Sync request failed: {}", e))?;
 
         let status = response.status();
         let body = response
