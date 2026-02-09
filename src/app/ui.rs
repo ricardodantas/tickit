@@ -331,7 +331,7 @@ fn render_lists_view(frame: &mut Frame, state: &AppState, area: Rect) {
         .iter()
         .enumerate()
         .map(|(i, list)| {
-            let selected = i + 1 == state.list_index || (i == 0 && state.list_index == 0);
+            let selected = i == state.list_index;
             let style = if selected {
                 colors.selected()
             } else {
