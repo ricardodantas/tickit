@@ -91,10 +91,10 @@ impl Default for Config {
 
 impl Config {
     /// Get the default config file path
+    /// Always uses ~/.config/tickit/config.toml for consistency across all OSs
     pub fn default_path() -> Result<PathBuf> {
-        let config_dir = dirs::config_dir()
-            .context("Could not determine config directory")?
-            .join("tickit");
+        let home = dirs::home_dir().context("Could not determine home directory")?;
+        let config_dir = home.join(".config").join("tickit");
         Ok(config_dir.join("config.toml"))
     }
 
