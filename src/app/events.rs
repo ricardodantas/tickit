@@ -462,7 +462,7 @@ fn toggle_settings_item(state: &mut AppState) {
         }
         SettingsItem::SyncInterval => {
             // Toggle through common intervals: 0 (manual), 60, 300, 600
-            let intervals = [0, 60, 300, 600, 1800];
+            let intervals = [0, 15, 30, 60, 300, 600, 1800];
             let current_idx = intervals
                 .iter()
                 .position(|&i| i == state.config.sync.interval_secs)
