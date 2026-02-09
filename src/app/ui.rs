@@ -8,7 +8,7 @@ use ratatui::{
     widgets::{Block, BorderType, Borders, Clear, List, ListItem, Paragraph, Tabs, Wrap},
 };
 
-use super::state::{AppState, EditorField, Focus, Mode, View};
+use super::state::{AppState, EditorField, Focus, Mode, SettingsItem, View};
 use crate::theme::Theme;
 
 /// ASCII art logo for Tickit (used in help screen)
@@ -73,6 +73,10 @@ pub fn render(frame: &mut Frame, state: &AppState) {
 
     if state.mode == Mode::ThemePicker {
         render_theme_picker(frame, state);
+    }
+
+    if state.mode == Mode::Settings {
+        render_settings_dialog(frame, state);
     }
 
     if state.mode == Mode::Confirm {
@@ -417,6 +421,8 @@ fn render_status_bar(frame: &mut Frame, state: &AppState, area: Rect) {
             Span::styled(": views  ", colors.text_muted()),
             Span::styled("?", colors.key_hint()),
             Span::styled(": help  ", colors.text_muted()),
+            Span::styled(",", colors.key_hint()),
+            Span::styled(": settings  ", colors.text_muted()),
             Span::styled("t", colors.key_hint()),
             Span::styled(": theme  ", colors.text_muted()),
             Span::styled("A", colors.key_hint()),
@@ -544,6 +550,10 @@ fn render_help_popup(frame: &mut Frame, state: &AppState) {
             colors.text_primary().add_modifier(Modifier::BOLD),
         )]),
         Line::from(vec![
+            Span::styled("  ,                  ", colors.key_hint()),
+            Span::styled("Open settings", colors.text()),
+        ]),
+        Line::from(vec![
             Span::styled("  t                  ", colors.key_hint()),
             Span::styled("Open theme selector", colors.text()),
         ]),
@@ -560,7 +570,7 @@ fn render_help_popup(frame: &mut Frame, state: &AppState) {
             Span::styled("Toggle this help", colors.text()),
         ]),
         Line::from(vec![
-            Span::styled("  Ctrl+s             ", colors.key_hint()),
+            Span::styled("  Ctrl+s / S         ", colors.key_hint()),
             Span::styled("Sync with server (if configured)", colors.text()),
         ]),
         Line::from(vec![
@@ -647,6 +657,121 @@ fn render_theme_picker(frame: &mut Frame, state: &AppState) {
     );
 
     frame.render_widget(theme_list, area);
+}
+
+/// Render settings dialog
+fn render_settings_dialog(frame: &mut Frame, state: &AppState) {
+    use crate::app::state::SettingsItem;
+
+    let colors = state.theme.colors();
+    let area = frame.area();
+
+    // Calculate popup size
+    let popup_width = 60u16.min(area.width.saturating_sub(4));
+    let popup_height = 18u16.min(area.height.saturating_sub(4));
+
+    let popup_area = Rect {
+        x: (area.width - popup_width) / 2,
+        y: (area.height - popup_height) / 2,
+        width: popup_width,
+        height: popup_height,
+    };
+
+    frame.render_widget(Clear, popup_area);
+
+    let items = SettingsItem::all();
+    let list_items: Vec<ListItem> = items
+        .iter()
+        .enumerate()
+        .map(|(i, item)| {
+            let selected = i == state.settings_index;
+            let cursor = if selected { "▸" } else { " " };
+
+            let value_str = get_settings_value_display(state, *item);
+
+            let style = if selected {
+                colors.selected().add_modifier(Modifier::BOLD)
+            } else {
+                colors.text()
+            };
+
+            let value_style = colors.text_muted();
+
+            ListItem::new(Line::from(vec![
+                Span::styled(format!(" {} ", cursor), style),
+                Span::styled(format!("{} ", item.icon()), style),
+                Span::styled(format!("{:<20}", item.label()), style),
+                Span::styled(value_str, value_style),
+            ]))
+        })
+        .collect();
+
+    let settings_list = List::new(list_items).block(
+        Block::default()
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(colors.accent))
+            .border_type(BorderType::Rounded)
+            .style(Style::default().bg(colors.bg))
+            .title(format!(
+                " ⚙ Settings ({}/{}) ",
+                state.settings_index + 1,
+                items.len()
+            ))
+            .title_bottom(
+                Line::from(" ↑↓ navigate │ ↵/␣ toggle │ ←→ adjust │ Esc close ").centered(),
+            ),
+    );
+
+    frame.render_widget(settings_list, popup_area);
+}
+
+fn get_settings_value_display(state: &AppState, item: SettingsItem) -> String {
+    use crate::app::state::SettingsItem;
+
+    match item {
+        SettingsItem::Theme => state.theme.name().to_string(),
+        SettingsItem::SyncEnabled => {
+            if state.config.sync.enabled {
+                "✓ Enabled".to_string()
+            } else {
+                "✗ Disabled".to_string()
+            }
+        }
+        SettingsItem::SyncServer => state
+            .config
+            .sync
+            .server
+            .clone()
+            .unwrap_or_else(|| "Not set".to_string()),
+        SettingsItem::SyncToken => {
+            if state.config.sync.token.is_some() {
+                "••••••••".to_string()
+            } else {
+                "Not set".to_string()
+            }
+        }
+        SettingsItem::SyncInterval => {
+            if state.config.sync.interval_secs > 0 {
+                format!("{}s", state.config.sync.interval_secs)
+            } else {
+                "Manual only".to_string()
+            }
+        }
+        SettingsItem::Notifications => {
+            if state.config.notifications {
+                "✓ Enabled".to_string()
+            } else {
+                "✗ Disabled".to_string()
+            }
+        }
+        SettingsItem::ShowCompletedDefault => {
+            if state.config.show_completed {
+                "✓ Show".to_string()
+            } else {
+                "✗ Hide".to_string()
+            }
+        }
+    }
 }
 
 /// Render confirmation dialog

@@ -9,6 +9,56 @@ use crate::models::{List, Priority, Tag, Task};
 use crate::sync::SyncStatus;
 use crate::theme::Theme;
 
+/// Settings menu items
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SettingsItem {
+    Theme,
+    SyncEnabled,
+    SyncServer,
+    SyncToken,
+    SyncInterval,
+    Notifications,
+    ShowCompletedDefault,
+}
+
+impl SettingsItem {
+    pub fn all() -> &'static [SettingsItem] {
+        &[
+            SettingsItem::Theme,
+            SettingsItem::SyncEnabled,
+            SettingsItem::SyncServer,
+            SettingsItem::SyncToken,
+            SettingsItem::SyncInterval,
+            SettingsItem::Notifications,
+            SettingsItem::ShowCompletedDefault,
+        ]
+    }
+
+    pub fn label(&self) -> &'static str {
+        match self {
+            SettingsItem::Theme => "Theme",
+            SettingsItem::SyncEnabled => "Sync Enabled",
+            SettingsItem::SyncServer => "Sync Server",
+            SettingsItem::SyncToken => "Sync Token",
+            SettingsItem::SyncInterval => "Sync Interval",
+            SettingsItem::Notifications => "Notifications",
+            SettingsItem::ShowCompletedDefault => "Show Completed",
+        }
+    }
+
+    pub fn icon(&self) -> &'static str {
+        match self {
+            SettingsItem::Theme => "🎨",
+            SettingsItem::SyncEnabled => "🔄",
+            SettingsItem::SyncServer => "🌐",
+            SettingsItem::SyncToken => "🔑",
+            SettingsItem::SyncInterval => "⏱️",
+            SettingsItem::Notifications => "🔔",
+            SettingsItem::ShowCompletedDefault => "✓",
+        }
+    }
+}
+
 /// Input mode for the application
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum Mode {
@@ -19,6 +69,8 @@ pub enum Mode {
     ThemePicker,
     /// Help dialog
     Help,
+    /// Settings dialog
+    Settings,
     /// Adding a new task
     AddTask,
     /// Editing a task
@@ -139,6 +191,8 @@ pub struct AppState {
     pub tag_index: usize,
     /// Theme picker index
     pub theme_index: usize,
+    /// Settings menu index
+    pub settings_index: usize,
 
     // Editor state
     /// Current editor field
@@ -233,6 +287,7 @@ impl AppState {
             task_index: 0,
             tag_index: 0,
             theme_index: 0,
+            settings_index: 0,
             editor_field: EditorField::Title,
             input_buffer: String::new(),
             cursor_pos: 0,

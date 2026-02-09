@@ -2,7 +2,7 @@
 
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
-use super::state::{AppState, EditorField, Focus, Mode, View};
+use super::state::{AppState, EditorField, Focus, Mode, SettingsItem, View};
 use crate::theme::Theme;
 
 /// Handle a key event
@@ -18,6 +18,10 @@ pub fn handle_key(state: &mut AppState, key: KeyEvent) {
                 state.mode = Mode::Normal;
                 state.show_help = false;
             }
+            return;
+        }
+        Mode::Settings => {
+            handle_settings(state, key);
             return;
         }
         Mode::About => {
@@ -115,6 +119,12 @@ pub fn handle_key(state: &mut AppState, key: KeyEvent) {
                 .position(|t| *t == state.theme.inner())
                 .unwrap_or(0);
             state.mode = Mode::ThemePicker;
+            return;
+        }
+        // Settings dialog (comma, like many apps)
+        (_, KeyCode::Char(',')) => {
+            state.settings_index = 0;
+            state.mode = Mode::Settings;
             return;
         }
         // Manual sync (Ctrl+S or S)
@@ -370,6 +380,147 @@ fn handle_tags_view(state: &mut AppState, key: KeyEvent) {
 }
 
 /// Handle theme picker (like Hazelnut)
+/// Handle settings dialog
+fn handle_settings(state: &mut AppState, key: KeyEvent) {
+    let items = SettingsItem::all();
+    let len = items.len();
+
+    match key.code {
+        KeyCode::Esc => {
+            state.mode = Mode::Normal;
+        }
+        KeyCode::Down | KeyCode::Char('j') => {
+            state.settings_index = (state.settings_index + 1) % len;
+        }
+        KeyCode::Up | KeyCode::Char('k') => {
+            state.settings_index = state.settings_index.checked_sub(1).unwrap_or(len - 1);
+        }
+        KeyCode::Home | KeyCode::Char('g') => {
+            state.settings_index = 0;
+        }
+        KeyCode::End | KeyCode::Char('G') => {
+            state.settings_index = len - 1;
+        }
+        KeyCode::Enter | KeyCode::Char(' ') => {
+            toggle_settings_item(state);
+        }
+        KeyCode::Left | KeyCode::Char('h') => {
+            adjust_settings_item(state, -1);
+        }
+        KeyCode::Right | KeyCode::Char('l') => {
+            adjust_settings_item(state, 1);
+        }
+        _ => {}
+    }
+}
+
+fn toggle_settings_item(state: &mut AppState) {
+    let item = SettingsItem::all()[state.settings_index];
+    match item {
+        SettingsItem::Theme => {
+            // Open theme picker
+            state.theme_index = Theme::all()
+                .iter()
+                .position(|t| *t == state.theme.inner())
+                .unwrap_or(0);
+            state.mode = Mode::ThemePicker;
+        }
+        SettingsItem::SyncEnabled => {
+            state.config.sync.enabled = !state.config.sync.enabled;
+            let _ = state.config.save();
+            let status = if state.config.sync.enabled {
+                "enabled"
+            } else {
+                "disabled"
+            };
+            state.set_status(format!("Sync {}", status));
+        }
+        SettingsItem::Notifications => {
+            state.config.notifications = !state.config.notifications;
+            let _ = state.config.save();
+            let status = if state.config.notifications {
+                "enabled"
+            } else {
+                "disabled"
+            };
+            state.set_status(format!("Notifications {}", status));
+        }
+        SettingsItem::ShowCompletedDefault => {
+            state.config.show_completed = !state.config.show_completed;
+            state.show_completed = state.config.show_completed;
+            let _ = state.config.save();
+            let _ = state.refresh_tasks();
+            let status = if state.config.show_completed {
+                "shown"
+            } else {
+                "hidden"
+            };
+            state.set_status(format!("Completed tasks {} by default", status));
+        }
+        SettingsItem::SyncServer | SettingsItem::SyncToken => {
+            state.set_status("Edit config file to change this value");
+        }
+        SettingsItem::SyncInterval => {
+            // Toggle through common intervals: 0 (manual), 60, 300, 600
+            let intervals = [0, 60, 300, 600, 1800];
+            let current_idx = intervals
+                .iter()
+                .position(|&i| i == state.config.sync.interval_secs)
+                .unwrap_or(0);
+            let next_idx = (current_idx + 1) % intervals.len();
+            state.config.sync.interval_secs = intervals[next_idx];
+            let _ = state.config.save();
+            let display = if state.config.sync.interval_secs == 0 {
+                "manual only".to_string()
+            } else {
+                format!("{}s", state.config.sync.interval_secs)
+            };
+            state.set_status(format!("Sync interval: {}", display));
+        }
+    }
+}
+
+fn adjust_settings_item(state: &mut AppState, delta: i32) {
+    let item = SettingsItem::all()[state.settings_index];
+    match item {
+        SettingsItem::Theme => {
+            let themes = Theme::all();
+            let len = themes.len();
+            let current_idx = themes
+                .iter()
+                .position(|t| *t == state.theme.inner())
+                .unwrap_or(0);
+            let new_idx = if delta > 0 {
+                (current_idx + 1) % len
+            } else {
+                current_idx.checked_sub(1).unwrap_or(len - 1)
+            };
+            state.set_theme(Theme::from(themes[new_idx]));
+            state.set_status(format!("Theme: {}", state.theme.name()));
+        }
+        SettingsItem::SyncInterval => {
+            let current = state.config.sync.interval_secs as i64;
+            let new_val = if delta > 0 {
+                (current + 60).min(3600) as u64
+            } else {
+                (current - 60).max(0) as u64
+            };
+            state.config.sync.interval_secs = new_val;
+            let _ = state.config.save();
+            let display = if new_val == 0 {
+                "manual only".to_string()
+            } else {
+                format!("{}s", new_val)
+            };
+            state.set_status(format!("Sync interval: {}", display));
+        }
+        _ => {
+            // For toggle items, left/right also toggles
+            toggle_settings_item(state);
+        }
+    }
+}
+
 fn handle_theme_picker(state: &mut AppState, key: KeyEvent) {
     let themes = Theme::all();
     let len = themes.len();
