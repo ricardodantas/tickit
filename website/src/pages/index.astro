@@ -276,49 +276,6 @@ tickit export --format todotxt</code></pre>
       </div>
     </div>
   </section>
-
-  <section class="keybindings">
-    <div class="container">
-      <h2>Keyboard Shortcuts</h2>
-      <p class="section-description">
-        Navigate efficiently with vim-style keybindings.
-      </p>
-      <div class="keybindings-grid">
-        <div class="keybinding-group">
-          <h3>Navigation</h3>
-          <ul>
-            <li><kbd>j</kbd> / <kbd>↓</kbd> Move down</li>
-            <li><kbd>k</kbd> / <kbd>↑</kbd> Move up</li>
-            <li><kbd>1</kbd> Tasks view</li>
-            <li><kbd>2</kbd> Lists view</li>
-            <li><kbd>3</kbd> Tags view</li>
-          </ul>
-        </div>
-        <div class="keybinding-group">
-          <h3>Actions</h3>
-          <ul>
-            <li><kbd>n</kbd> New task/list/tag</li>
-            <li><kbd>e</kbd> Edit selected</li>
-            <li><kbd>d</kbd> Delete selected</li>
-            <li><kbd>Space</kbd> Toggle complete</li>
-            <li><kbd>o</kbd> Open URL</li>
-          </ul>
-        </div>
-        <div class="keybinding-group">
-          <h3>UI</h3>
-          <ul>
-            <li><kbd>s</kbd> Settings</li>
-            <li><kbd>t</kbd> Theme picker</li>
-            <li><kbd>?</kbd> Show help</li>
-            <li><kbd>A</kbd> About dialog</li>
-            <li><kbd>c</kbd> Toggle completed</li>
-            <li><kbd>S</kbd> Sync (if configured)</li>
-            <li><kbd>q</kbd> Quit</li>
-          </ul>
-        </div>
-      </div>
-    </div>
-  </section>
 </Layout>
 
 <style>
@@ -755,58 +712,6 @@ tickit export --format todotxt</code></pre>
     padding: 0.125rem 0.375rem;
   }
 
-  /* Keybindings Section */
-  .keybindings {
-    padding: 6rem 1.5rem;
-    background: var(--bg-secondary);
-  }
-
-  .keybindings-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 2rem;
-    margin-top: 3rem;
-  }
-
-  .keybinding-group {
-    background: var(--bg-primary);
-    padding: 1.5rem;
-    border-radius: 12px;
-    border: 1px solid var(--bg-tertiary);
-  }
-
-  .keybinding-group h3 {
-    font-size: 1.125rem;
-    margin-bottom: 1rem;
-    color: var(--accent-green);
-  }
-
-  .keybinding-group ul {
-    list-style: none;
-  }
-
-  .keybinding-group li {
-    padding: 0.5rem 0;
-    color: var(--text-secondary);
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-  }
-
-  kbd {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 2rem;
-    padding: 0.25rem 0.5rem;
-    font-family: var(--font-mono);
-    font-size: 0.875rem;
-    background: var(--bg-tertiary);
-    border-radius: 4px;
-    color: var(--text-primary);
-    border: 1px solid var(--text-secondary);
-  }
-
   @media (max-width: 768px) {
     .hero {
       padding: calc(var(--nav-height) + 2rem) 1rem 2rem;
@@ -858,7 +763,7 @@ tickit export --format todotxt</code></pre>
       width: 100%;
     }
 
-    .features, .examples, .themes-preview, .quick-start, .keybindings {
+    .features, .examples, .themes-preview, .quick-start {
       padding: 3rem 1rem;
     }
 
@@ -875,10 +780,6 @@ tickit export --format todotxt</code></pre>
     .step-code {
       justify-content: center;
       flex-wrap: wrap;
-    }
-
-    .keybindings-grid {
-      grid-template-columns: 1fr;
     }
   }
 </style>
