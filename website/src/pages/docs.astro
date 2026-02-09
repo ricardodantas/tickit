@@ -1042,6 +1042,11 @@ Token: tks_abc123...
 ⚠️  Save this token now - it cannot be retrieved later!`}</code></pre>
         </div>
 
+        <div class="callout warning">
+          <strong>⚠️ Important:</strong> After generating a new token, you must restart the tickit-sync service for it to take effect:
+          <pre><code>docker restart tickit-sync</code></pre>
+        </div>
+
         <div class="callout info">
           <strong>💡 Security:</strong> Tokens are hashed with Argon2 before storage. The plaintext token is only shown once when generated — save it immediately!
         </div>
