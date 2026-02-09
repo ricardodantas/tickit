@@ -714,9 +714,13 @@ fn render_settings_dialog(frame: &mut Frame, state: &AppState) {
             let selected = i == state.settings_index;
             let cursor = if selected { "▸" } else { " " };
 
-            // If we're editing this item, show the input buffer
+            // If we're editing this item, show the input buffer with cursor at position
             let value_str = if is_editing && state.settings_editing == Some(*item) {
-                format!("{}▏", state.input_buffer)
+                let buf = &state.input_buffer;
+                let pos = state.cursor_pos.min(buf.len());
+                let before: String = buf.chars().take(pos).collect();
+                let after: String = buf.chars().skip(pos).collect();
+                format!("{}▏{}", before, after)
             } else {
                 get_settings_value_display(state, *item)
             };
