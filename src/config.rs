@@ -98,9 +98,15 @@ impl Config {
         Ok(config_dir.join("config.toml"))
     }
 
-    /// Load config from the default path or create default
+    /// Load config from the default path, creating it if it doesn't exist
     pub fn load() -> Result<Self> {
         let path = Self::default_path()?;
+        if !path.exists() {
+            // Create default config file on first run
+            let config = Self::default();
+            config.save_to(&path)?;
+            return Ok(config);
+        }
         Self::load_from(&path)
     }
 
