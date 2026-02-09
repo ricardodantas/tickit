@@ -112,24 +112,20 @@ fn run_app(
             match result {
                 Ok(response) => {
                     // Apply incoming changes from server
-                    let applied = apply_incoming_changes(&state.db, &response);
+                    let _applied = apply_incoming_changes(&state.db, &response);
 
                     // Update last sync time in DB
                     let _ = state.db.set_last_sync(response.server_time);
                     state.set_last_sync(response.server_time);
 
-                    if applied > 0 {
-                        state.set_status(format!("Synced ({} changes applied)", applied));
-                    } else {
-                        state.set_status("Synced");
-                    }
+                    // Sync indicator on the right shows "Synced" status
 
                     // Refresh data after sync
                     let _ = state.refresh_data();
                 }
                 Err(e) => {
                     state.set_sync_error(Some(e.clone()));
-                    state.set_status(format!("Sync failed: {}", e));
+                    // Sync indicator shows error status
                 }
             }
         }

@@ -125,8 +125,7 @@ pub fn handle_key(state: &mut AppState, key: KeyEvent) {
         (KeyModifiers::CONTROL, KeyCode::Char('s')) | (_, KeyCode::Char('S')) => {
             if state.is_sync_enabled() {
                 state.set_syncing(true);
-                state.set_status("Syncing...");
-                // Actual sync is triggered in main loop via sync_requested flag
+                // Sync indicator on the right shows status, no need for left status message
             } else {
                 state.set_status("Sync not configured");
             }
