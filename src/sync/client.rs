@@ -110,8 +110,9 @@ impl SyncClient {
 
     /// Get or create a persistent device ID
     fn get_or_create_device_id() -> Uuid {
-        let path = dirs::config_dir()
-            .map(|p| p.join("tickit").join(".device_id"))
+        // Use consistent path: ~/.config/tickit/.device_id
+        let path = dirs::home_dir()
+            .map(|p| p.join(".config").join("tickit").join(".device_id"))
             .unwrap_or_else(|| std::path::PathBuf::from(".tickit_device_id"));
 
         // Try to read existing

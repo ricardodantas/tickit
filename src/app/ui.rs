@@ -462,9 +462,15 @@ fn render_status_bar(frame: &mut Frame, state: &AppState, area: Rect) {
                 " ↻ Syncing... ",
                 Style::default().fg(Color::Cyan).bg(colors.bg_secondary),
             )
-        } else if state.sync_status.last_error.is_some() {
+        } else if let Some(ref error) = state.sync_status.last_error {
+            // Truncate error for status bar, show abbreviated message
+            let short_error = if error.len() > 20 {
+                format!(" ⚠ {}… ", &error[..20])
+            } else {
+                format!(" ⚠ {} ", error)
+            };
             Span::styled(
-                " ⚠ Sync Error ",
+                short_error,
                 Style::default().fg(Color::Red).bg(colors.bg_secondary),
             )
         } else if state.sync_status.last_sync.is_some() {
