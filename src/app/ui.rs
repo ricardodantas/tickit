@@ -421,7 +421,7 @@ fn render_status_bar(frame: &mut Frame, state: &AppState, area: Rect) {
             Span::styled(": views  ", colors.text_muted()),
             Span::styled("?", colors.key_hint()),
             Span::styled(": help  ", colors.text_muted()),
-            Span::styled(",", colors.key_hint()),
+            Span::styled("s", colors.key_hint()),
             Span::styled(": settings  ", colors.text_muted()),
             Span::styled("t", colors.key_hint()),
             Span::styled(": theme  ", colors.text_muted()),
@@ -550,7 +550,7 @@ fn render_help_popup(frame: &mut Frame, state: &AppState) {
             colors.text_primary().add_modifier(Modifier::BOLD),
         )]),
         Line::from(vec![
-            Span::styled("  ,                  ", colors.key_hint()),
+            Span::styled("  s                  ", colors.key_hint()),
             Span::styled("Open settings", colors.text()),
         ]),
         Line::from(vec![

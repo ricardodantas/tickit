@@ -121,13 +121,13 @@ pub fn handle_key(state: &mut AppState, key: KeyEvent) {
             state.mode = Mode::ThemePicker;
             return;
         }
-        // Settings dialog (comma, like many apps)
-        (_, KeyCode::Char(',')) => {
+        // Settings dialog (s like Hazelnut)
+        (_, KeyCode::Char('s')) => {
             state.settings_index = 0;
             state.mode = Mode::Settings;
             return;
         }
-        // Manual sync (Ctrl+S or S)
+        // Manual sync (Ctrl+S or Shift+S)
         (KeyModifiers::CONTROL, KeyCode::Char('s')) | (_, KeyCode::Char('S')) => {
             if state.is_sync_enabled() {
                 state.set_syncing(true);
