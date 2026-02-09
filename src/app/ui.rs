@@ -409,7 +409,26 @@ fn render_tags_view(frame: &mut Frame, state: &AppState, area: Rect) {
 fn render_status_bar(frame: &mut Frame, state: &AppState, area: Rect) {
     let colors = state.theme.colors();
 
-    let mut content = if let Some(msg) = &state.status_message {
+    // Calculate sync indicator width for layout
+    let sync_width = if state.is_sync_enabled() { 16u16 } else { 0u16 };
+    let content_width = area.width.saturating_sub(sync_width);
+
+    // Split area into content and sync indicator
+    let content_area = Rect {
+        x: area.x,
+        y: area.y,
+        width: content_width,
+        height: area.height,
+    };
+    let sync_area = Rect {
+        x: area.x + content_width,
+        y: area.y,
+        width: sync_width,
+        height: area.height,
+    };
+
+    // Render main content
+    let content = if let Some(msg) = &state.status_message {
         vec![
             Span::styled(" ", Style::default()),
             Span::styled(msg, colors.text_secondary()),
@@ -432,39 +451,27 @@ fn render_status_bar(frame: &mut Frame, state: &AppState, area: Rect) {
         ]
     };
 
-    // Add sync indicator on the right side if sync is enabled
-    if state.is_sync_enabled() {
-        let sync_indicator = if state.sync_status.syncing {
-            vec![
-                Span::styled("  ", Style::default()),
-                Span::styled("↻ Syncing...", Style::default().fg(Color::Cyan)),
-            ]
-        } else if let Some(ref error) = state.sync_status.last_error {
-            vec![
-                Span::styled("  ", Style::default()),
-                Span::styled(
-                    format!("⚠ Sync: {}", error),
-                    Style::default().fg(Color::Red),
-                ),
-            ]
-        } else if state.sync_status.last_sync.is_some() {
-            vec![
-                Span::styled("  ", Style::default()),
-                Span::styled("☁ Synced", Style::default().fg(Color::Green)),
-            ]
-        } else {
-            vec![
-                Span::styled("  ", Style::default()),
-                Span::styled("Ctrl+S", colors.key_hint()),
-                Span::styled(": sync", colors.text_muted()),
-            ]
-        };
-        content.extend(sync_indicator);
-    }
-
     let status =
         Paragraph::new(Line::from(content)).style(Style::default().bg(colors.bg_secondary));
-    frame.render_widget(status, area);
+    frame.render_widget(status, content_area);
+
+    // Render sync indicator separately (only this part updates during sync)
+    if state.is_sync_enabled() {
+        let sync_indicator = if state.sync_status.syncing {
+            Span::styled(" ↻ Syncing... ", Style::default().fg(Color::Cyan).bg(colors.bg_secondary))
+        } else if state.sync_status.last_error.is_some() {
+            Span::styled(" ⚠ Sync Error ", Style::default().fg(Color::Red).bg(colors.bg_secondary))
+        } else if state.sync_status.last_sync.is_some() {
+            Span::styled(" ☁ Synced ", Style::default().fg(Color::Green).bg(colors.bg_secondary))
+        } else {
+            Span::styled(" S: sync ", Style::default().fg(colors.fg_muted).bg(colors.bg_secondary))
+        };
+
+        let sync_widget = Paragraph::new(Line::from(vec![sync_indicator]))
+            .style(Style::default().bg(colors.bg_secondary))
+            .alignment(Alignment::Right);
+        frame.render_widget(sync_widget, sync_area);
+    }
 }
 
 /// Render help popup
